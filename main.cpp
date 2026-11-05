@@ -35,7 +35,8 @@ void OnMouseClick(int x, int y) {
         }
     }
     else if (g_state == STATE_OPTIONS) {
-        RECT btnBack = { 600, 500, 750, 550 };
+        // НОВЫЕ КООРДИНАТЫ ДЛЯ КНОПКИ BACK ВНУТРИ ОКНА
+        RECT btnBack = { 500, 380, 580, 420 };
         if (x >= btnBack.left && x <= btnBack.right && y >= btnBack.top && y <= btnBack.bottom) {
             g_state = STATE_MENU;
         }
@@ -67,7 +68,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
     g_hInst = hInst;
 
-    // Загружаем шрифт Undertale
     AddFontResourceExW(L"assets\\Monodetermination.ttf", FR_PRIVATE, 0);
 
     GdiplusStartupInput gdiplusStartupInput;
