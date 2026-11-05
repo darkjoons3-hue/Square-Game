@@ -216,7 +216,8 @@ void RenderGameOver(HDC hdc) {
     HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
 
     RECT textRect = { 0, 0, 800, 600 };
-    DrawTextW(hdc, L"GAME OVER\n\n(Нажми мышкой, чтобы выйти в меню)", -1, &textRect, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
+    // (\u041d\u0430\u0436\u043c\u0438 \u043c\u044b\u0448\u043a\u043e\u0439, \u0447\u0442\u043e\u0431\u044b \u0432\u044b\u0439\u0442\u0438 \u0432 \u043c\u0435\u043d\u044e) = (Нажми мышкой, чтобы выйти в меню)
+    DrawTextW(hdc, L"GAME OVER\n\n(\u041d\u0430\u0436\u043c\u0438 \u043c\u044b\u0448\u043a\u043e\u0439, \u0447\u0442\u043e\u0431\u044b \u0432\u044b\u0439\u0442\u0438 \u0432 \u043c\u0435\u043d\u044e)", -1, &textRect, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
     
     SelectObject(hdc, oldFont);
     DeleteObject(fontBig);
@@ -233,7 +234,7 @@ void RenderComplete(HDC hdc) {
     HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
 
     RECT textRect = { 0, 0, 800, 600 };
-    DrawTextW(hdc, L"COMPLETE\n\n(Нажми мышкой, чтобы выйти в меню)", -1, &textRect, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
+    DrawTextW(hdc, L"COMPLETE\n\n(\u041d\u0430\u0436\u043c\u0438 \u043c\u044b\u0448\u043a\u043e\u0439, \u0447\u0442\u043e\u0431\u044b \u0432\u044b\u0439\u0442\u0438 \u0432 \u043c\u0435\u043d\u044e)", -1, &textRect, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
     
     SelectObject(hdc, oldFont);
     DeleteObject(fontBig);
