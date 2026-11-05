@@ -9,8 +9,6 @@ float g_menuAlpha = 0.0f;
 POINT g_mousePos = { 400, 300 };
 POINT g_lastMousePos = { -1, -1 };
 float g_cursorAngle = 0.0f;
-float g_glitchTimer = 0.0f;
-RECT g_glitchRect = { 0, 0, 0, 0 };
 
 void DrawCustomCursor(HDC hdc) {
     Graphics graphics(hdc);
@@ -46,16 +44,6 @@ void UpdateMenu() {
         if (g_disclaimerAlpha < 1.0f) g_disclaimerAlpha += 0.01f;
     } else if (g_state == STATE_MENU) {
         if (g_menuAlpha < 1.0f) g_menuAlpha += 0.02f;
-        
-        g_glitchTimer += 1.0f;
-        if (g_glitchTimer > 15.0f) {
-            g_glitchTimer = 0;
-            int boxX = (800 - 150) / 2;
-            int boxY = 150;
-            int gx = boxX + 10 + rand() % 130;
-            int gy = boxY + 10 + rand() % 130;
-            g_glitchRect = { gx, gy, gx + 8, gy + 8 };
-        }
     }
 }
 
@@ -65,6 +53,7 @@ void RenderMenu(HDC hdc) {
     HFONT fontBig = CreateFontW(32, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
     HFONT fontNormal = CreateFontW(20, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
     HFONT fontSmall = CreateFontW(16, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
+    HFONT fontTiny = CreateFontW(14, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
 
     if (g_state == STATE_DISCLAIMER) {
         SolidBrush bg(Color(255, 15, 15, 15));
@@ -98,70 +87,95 @@ void RenderMenu(HDC hdc) {
         }
         SelectObject(hdc, oldFont);
     } 
-    else if (g_state == STATE_MENU) {
+    else if (g_state == STATE_MENU || g_state == STATE_OPTIONS) {
+        // 1. Рисуем фон главного меню (белый)
         SolidBrush bg(Color(255, 255, 255, 255)); 
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
+        // 2. Логотип (без глитча)
         SolidBrush logoBrush(Color(255, 0, 0, 0));
         graphics.FillRectangle(&logoBrush, 325, 150, 150, 150);
 
-        if (g_glitchRect.right > 0) {
-            SolidBrush glitchBrush(Color(255, 0, 255, 0));
-            graphics.FillRectangle(&glitchBrush, g_glitchRect.left, g_glitchRect.top, 8, 8);
-        }
-
+        // 3. Кнопки меню
         SetBkMode(hdc, TRANSPARENT);
         const wchar_t* buttons[] = { L"PLAY", L"ONITION", L"EXIT" };
         for (int i = 0; i < 3; i++) {
             RECT btnRect = { 300, 350 + (i * 50), 500, 390 + (i * 50) };
             bool hover = (g_mousePos.x >= btnRect.left && g_mousePos.x <= btnRect.right && g_mousePos.y >= btnRect.top && g_mousePos.y <= btnRect.bottom);
             
-            if (hover) SetTextColor(hdc, RGB(0, 180, 0));
+            // Если открыто меню настроек, кнопки на фоне не должны подсвечиваться
+            if (hover && g_state == STATE_MENU) SetTextColor(hdc, RGB(0, 180, 0));
             else SetTextColor(hdc, RGB(0, 0, 0));
 
             SelectObject(hdc, fontBig);
             DrawTextW(hdc, buttons[i], -1, &btnRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         }
-    }
-    else if (g_state == STATE_OPTIONS) {
-        SolidBrush bg(Color(255, 20, 20, 20));
-        graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(255, 255, 255));
-        
-        RECT titleRect = { 0, 50, 800, 100 };
-        SelectObject(hdc, fontBig);
-        DrawTextW(hdc, L"OPTIONS", -1, &titleRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        // 4. Версия в углу
+        SetTextColor(hdc, RGB(100, 100, 100));
+        SelectObject(hdc, fontTiny);
+        RECT verRect = { 650, 560, 780, 590 };
+        DrawTextW(hdc, L"version 1.0", -1, &verRect, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
 
-        SelectObject(hdc, fontNormal);
-        
-        RECT musicRect = { 200, 200, 600, 250 };
-        DrawTextW(hdc, L"Music", -1, &musicRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-        RECT musicBar = { 400, 210, 600, 230 };
-        SolidBrush barBg(Color(255, 50, 50, 50));
-        graphics.FillRectangle(&barBg, musicBar.left, musicBar.top, 200, 20);
-        SolidBrush barFill(Color(255, 0, 180, 0));
-        graphics.FillRectangle(&barFill, musicBar.left, musicBar.top, 100, 20);
+        // 5. ОКНО НАСТРОЕК (Модальное окно)
+        if (g_state == STATE_OPTIONS) {
+            // Затемняем фон (полупрозрачный черный прямоугольник на весь экран)
+            SolidBrush darkOverlay(Color(150, 0, 0, 0));
+            graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
 
-        RECT soundRect = { 200, 300, 600, 350 };
-        DrawTextW(hdc, L"Sound", -1, &soundRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-        RECT soundBar = { 400, 310, 600, 330 };
-        graphics.FillRectangle(&barBg, soundBar.left, soundBar.top, 200, 20);
-        graphics.FillRectangle(&barFill, soundBar.left, soundBar.top, 150, 20); 
+            // Рисуем светлое окно по центру
+            RECT modalRect = { 200, 100, 600, 500 };
+            SolidBrush modalBg(Color(255, 240, 240, 240)); // Светло-серый
+            graphics.FillRectangle(&modalBg, modalRect.left, modalRect.top, 400, 400);
+            
+            // Рамка окна
+            Pen borderPen(Color(255, 0, 0, 0), 3);
+            graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 400, 400);
 
-        RECT backBtn = { 600, 500, 750, 550 };
-        bool hoverBack = (g_mousePos.x >= backBtn.left && g_mousePos.x <= backBtn.right && g_mousePos.y >= backBtn.top && g_mousePos.y <= backBtn.bottom);
-        SolidBrush btnBrush(hoverBack ? Color(255, 100, 100, 100) : Color(255, 50, 50, 50));
-        graphics.FillRectangle(&btnBrush, backBtn.left, backBtn.top, 150, 50);
-        
-        SetTextColor(hdc, RGB(255, 255, 255));
-        DrawTextW(hdc, L"BACK", -1, &backBtn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            // Заголовок OPTIONS
+            SetTextColor(hdc, RGB(0, 0, 0));
+            SelectObject(hdc, fontBig);
+            RECT titleRect = { 200, 120, 600, 170 };
+            DrawTextW(hdc, L"OPTIONS", -1, &titleRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+            // Настройки Music
+            SelectObject(hdc, fontNormal);
+            RECT musicRect = { 250, 220, 400, 250 };
+            DrawTextW(hdc, L"Music", -1, &musicRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            
+            RECT musicBar = { 400, 225, 550, 245 };
+            SolidBrush barBg(Color(255, 150, 150, 150));
+            graphics.FillRectangle(&barBg, musicBar.left, musicBar.top, 150, 20);
+            SolidBrush barFill(Color(255, 0, 180, 0));
+            graphics.FillRectangle(&barFill, musicBar.left, musicBar.top, 80, 20);
+
+            // Настройки Sound
+            RECT soundRect = { 250, 300, 400, 330 };
+            DrawTextW(hdc, L"Sound", -1, &soundRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            
+            RECT soundBar = { 400, 305, 550, 325 };
+            graphics.FillRectangle(&barBg, soundBar.left, soundBar.top, 150, 20);
+            graphics.FillRectangle(&barFill, soundBar.left, soundBar.top, 120, 20); 
+
+            // Кнопка BACK внутри окна
+            RECT backBtn = { 500, 380, 580, 420 };
+            bool hoverBack = (g_mousePos.x >= backBtn.left && g_mousePos.x <= backBtn.right && g_mousePos.y >= backBtn.top && g_mousePos.y <= backBtn.bottom);
+            
+            SolidBrush btnBrush(hoverBack ? Color(255, 200, 200, 200) : Color(255, 180, 180, 180));
+            graphics.FillRectangle(&btnBrush, backBtn.left, backBtn.top, 80, 40);
+            Pen btnBorder(Color(255, 0, 0, 0), 2);
+            graphics.DrawRectangle(&btnBorder, backBtn.left, backBtn.top, 80, 40);
+
+            SetTextColor(hdc, RGB(0, 0, 0));
+            SelectObject(hdc, fontSmall);
+            DrawTextW(hdc, L"BACK", -1, &backBtn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        }
     }
 
     DeleteObject(fontBig);
     DeleteObject(fontNormal);
     DeleteObject(fontSmall);
+    DeleteObject(fontTiny);
 
     DrawCustomCursor(hdc);
 }
