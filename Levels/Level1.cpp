@@ -19,6 +19,9 @@ float deathTimer = 0;
 Image* playerImg = nullptr;
 Image* blockImg = nullptr;
 
+// ОПТИМИЗАЦИЯ: Создаем шрифт 1 раз и храним глобально
+HFONT g_hudFont = nullptr;
+
 void RespawnPlayer() {
     player.x = 100;
     player.y = 600; 
@@ -29,7 +32,7 @@ void RespawnPlayer() {
     isFallingToDeath = false;
     deathTimer = 0;
     g_gameOverTimer = 0;
-    g_levelStartTime = GetTickCount(); // Сброс таймера при старте/смерти
+    g_levelStartTime = GetTickCount(); 
 }
 
 void InitLevel1() {
@@ -39,8 +42,13 @@ void InitLevel1() {
     if (!playerImg) playerImg = new Image(L"assets\\Player.png");
     if (!blockImg) blockImg = new Image(L"assets\\block.png");
 
-    // 1. Стена слева (высота 5 блоков = 250px)
-    platforms.push_back({0, 400, 50, 250});
+    // Создаем шрифт для HUD только один раз
+    if (!g_hudFont) {
+        g_hudFont = CreateFontW(24, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
+    }
+
+    // 1. Стена слева (ОГРОМНАЯ, чтобы закрыть пустоту внизу)
+    platforms.push_back({0, 400, 50, 2000}); // Высота 2000 вместо 250
 
     // 2. Потолок (РОВНО 5 блоков = 250px)
     platforms.push_back({50, 400, 250, 50});
@@ -60,7 +68,7 @@ void InitLevel1() {
 void UpdateLevel1() {
     if (isFallingToDeath) {
         deathTimer += 1.0f;
-        if (deathTimer > 180.0f) { // ~3 секунды (60 fps * 3)
+        if (deathTimer > 180.0f) { 
             g_state = STATE_GAME_OVER;
             g_gameOverTimer = GetTickCount();
         }
@@ -81,7 +89,6 @@ void UpdateLevel1() {
     player.vy += 1.5f; 
     player.x += player.vx;
 
-    // Коллизия по X
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -95,7 +102,6 @@ void UpdateLevel1() {
     player.y += player.vy;
     player.onGround = false;
 
-    // Коллизия по Y
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -115,7 +121,6 @@ void UpdateLevel1() {
         isFallingToDeath = true; 
     }
 
-    // Камера
     if (!isFallingToDeath) {
         float targetCamX = player.x + player.size / 2 - 400; 
         float targetCamY = player.y + player.size / 2 - 300; 
@@ -135,10 +140,12 @@ void UpdateLevel1() {
 void RenderLevel1(HDC hdc) {
     Graphics graphics(hdc);
     
+    // МАГИЯ: Отключаем сглаживание, чтобы не было ореолов у блоков!
+    graphics.SetInterpolationMode(InterpolationModeNearestNeighbor);
+    
     SolidBrush bg(Color(255, 255, 255, 255));
     graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
-    // Отрисовка платформ
     for (const auto& p : platforms) {
         if (p.x + p.w > cameraX && p.x < cameraX + 800 && p.y + p.h > cameraY && p.y < cameraY + 600) {
             if (blockImg && blockImg->GetLastStatus() == Ok) {
@@ -150,7 +157,6 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // Отрисовка игрока
     if (playerImg && playerImg->GetLastStatus() == Ok) {
         graphics.DrawImage(playerImg, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     } else {
@@ -158,18 +164,14 @@ void RenderLevel1(HDC hdc) {
         graphics.FillRectangle(&playerBrush, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     }
 
-    // --- ОТРИСОВКА HUD (Таймер и Пауза) ---
+    // --- ОТРИСОВКА HUD ---
     SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(0, 0, 0)); // Черный текст на белом фоне
+    SetTextColor(hdc, RGB(0, 0, 0)); 
     
-    // Шрифт для HUD (используем GDI для надежности)
-    HFONT fontHUD = CreateFontW(24, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-    HFONT oldFont = (HFONT)SelectObject(hdc, fontHUD);
+    HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
 
-    // 1. Название уровня
     TextOutW(hdc, 20, 20, L"LEVEL 1", 7);
 
-    // 2. Таймер (минуты:секунды:миллисекунды)
     DWORD elapsed = GetTickCount() - g_levelStartTime;
     int ms = elapsed % 1000;
     int totalSec = elapsed / 1000;
@@ -180,8 +182,6 @@ void RenderLevel1(HDC hdc) {
     swprintf_s(timeStr, L"%02d:%02d:%03d", min, sec, ms);
     TextOutW(hdc, 20, 50, timeStr, wcslen(timeStr));
 
-    // 3. Кнопка Паузы (в правом верхнем углу)
-    // Рисуем две полоски (||)
     SolidBrush pauseBtnBg(Color(255, 230, 230, 230));
     graphics.FillRectangle(&pauseBtnBg, 750, 10, 40, 40);
     Pen borderPen(Color(255, 0, 0, 0), 2);
@@ -192,11 +192,9 @@ void RenderLevel1(HDC hdc) {
     graphics.FillRectangle(&pauseIcon, 774, 20, 6, 20);
 
     SelectObject(hdc, oldFont);
-    DeleteObject(fontHUD);
 }
 
 void RenderGameOver(HDC hdc) {
-    // Если прошло больше 3 секунд, перезапускаем уровень
     if (GetTickCount() - g_gameOverTimer > 3000) {
         InitLevel1();
         g_state = STATE_PLAYING;
@@ -209,14 +207,12 @@ void RenderGameOver(HDC hdc) {
 
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0));
-    HFONT fontBig = CreateFontW(48, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-    HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
+    HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
 
     RECT textRect = { 0, 0, 800, 600 };
     DrawTextW(hdc, L"GAME OVER!", -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     
     SelectObject(hdc, oldFont);
-    DeleteObject(fontBig);
 }
 
 void RenderComplete(HDC hdc) {
@@ -226,12 +222,10 @@ void RenderComplete(HDC hdc) {
 
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0));
-    HFONT fontBig = CreateFontW(48, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-    HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
+    HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
 
     RECT textRect = { 0, 0, 800, 600 };
     DrawTextW(hdc, L"COMPLETE!", -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     
     SelectObject(hdc, oldFont);
-    DeleteObject(fontBig);
 }
