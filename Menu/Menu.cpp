@@ -60,9 +60,19 @@ void InitMenu() {
     // Загружаем шрифт напрямую из файла
     if (g_pfc.GetFamilyCount() == 0) {
         g_pfc.AddFontFile(L"assets\\Monodetermination.ttf");
-        if (g_pfc.GetFamilyCount() > 0) {
-            g_fontFamily = new FontFamily();
-            g_pfc.GetFamily(0, g_fontFamily);
+        
+        INT numFound = 0;
+        g_pfc.GetFamilyCount(&numFound);
+        if (numFound > 0) {
+            FontFamily* families = new FontFamily[numFound];
+            g_pfc.GetFamilies(numFound, families, &numFound);
+            if (numFound > 0) {
+                WCHAR familyName[LF_FACESIZE];
+                families[0].GetFamilyName(familyName);
+                // Создаем FontFamily, привязанный к приватной коллекции
+                g_fontFamily = new FontFamily(familyName, &g_pfc);
+            }
+            delete[] families;
         }
     }
     g_disclaimerAlpha = 0.0f;
