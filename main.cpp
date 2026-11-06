@@ -12,7 +12,6 @@
 
 using namespace Gdiplus;
 
-// ТЕКСТ ИСТОРИИ (3 страницы) - ТЕПЕРЬ В ЮНИКОДЕ!
 const wchar_t* storyPages[] = {
     L"\u042d\u0442\u043e \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e \u043e\u0431\u044b\u043a\u043d\u043e\u0432\u0435\u043d\u043d\u043e\u0433\u043e \u0447\u0435\u0440\u043d\u043e\u0433\u043e \u043a\u0443\u0431\u0438\u043a\u0430...",
     L"...\u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u043f\u044b\u0442\u0430\u0435\u0442\u0441\u044f \u043d\u0430\u0439\u0442\u0438 \u0441\u043c\u044b\u0441\u043b \u0436\u0438\u0437\u043d\u0438...",
@@ -22,16 +21,14 @@ const int TOTAL_PAGES = 3;
 
 void AdvanceStory() {
     if (g_state == STATE_STORY) {
-        // Если текст еще печатается - показываем его мгновенно
         if (g_charIndex < (int)g_currentText.length()) {
             g_charIndex = (int)g_currentText.length();
-        } 
-        // Если текст уже напечатан - переходим дальше
-        else {
+        } else {
             g_storyPage++;
             if (g_storyPage >= TOTAL_PAGES) {
                 g_state = STATE_PLAYING;
                 InitLevel1();
+                g_levelStartTime = GetTickCount();
             } else {
                 g_currentText = storyPages[g_storyPage];
                 g_charIndex = 0;
@@ -73,7 +70,35 @@ void OnMouseClick(int x, int y) {
         }
     }
     else if (g_state == STATE_STORY) {
-        AdvanceStory(); // Клик мышкой тоже листает историю
+        AdvanceStory();
+    }
+    else if (g_state == STATE_PLAYING) {
+        // Кнопка ПАУЗЫ (правый верхний угол)
+        RECT pauseBtn = { 750, 10, 790, 50 };
+        if (x >= pauseBtn.left && x <= pauseBtn.right && y >= pauseBtn.top && y <= pauseBtn.bottom) {
+            g_state = STATE_PAUSED;
+        }
+    }
+    else if (g_state == STATE_PAUSED) {
+        // Кнопки в меню паузы
+        RECT restartBtn = { 300, 250, 500, 290 };
+        RECT adviceBtn  = { 300, 300, 500, 340 };
+        RECT optionsBtn = { 300, 350, 500, 390 };
+        RECT exitBtn    = { 300, 400, 500, 440 };
+
+        if (x >= restartBtn.left && x <= restartBtn.right && y >= restartBtn.top && y <= restartBtn.bottom) {
+            InitLevel1(); // Перезапуск
+            g_state = STATE_PLAYING;
+        }
+        else if (x >= adviceBtn.left && x <= adviceBtn.right && y >= adviceBtn.top && y <= adviceBtn.bottom) {
+            // Пока пусто
+        }
+        else if (x >= optionsBtn.left && x <= optionsBtn.right && y >= optionsBtn.top && y <= optionsBtn.bottom) {
+            g_state = STATE_OPTIONS; // Кидаем в настройки
+        }
+        else if (x >= exitBtn.left && x <= exitBtn.right && y >= exitBtn.top && y <= exitBtn.bottom) {
+            g_state = STATE_MENU; // Выход в главное меню
+        }
     }
     else if (g_state == STATE_GAME_OVER || g_state == STATE_COMPLETE) {
         g_state = STATE_MENU;
@@ -89,7 +114,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         return 0;
     }
     case WM_KEYDOWN:
-        if (wParam == 'Z') { // Обработка клавиши Z
+        if (wParam == 'Z') { 
             AdvanceStory();
         }
         return 0;
@@ -147,13 +172,26 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             DispatchMessageW(&msg);
         }
 
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) UpdateMenu();
-        else if (g_state == STATE_PLAYING) UpdateLevel1();
-
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) RenderMenu(memDC);
-        else if (g_state == STATE_PLAYING) RenderLevel1(memDC);
-        else if (g_state == STATE_GAME_OVER) RenderGameOver(memDC);
-        else if (g_state == STATE_COMPLETE) RenderComplete(memDC);
+        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) {
+            UpdateMenu();
+            RenderMenu(memDC);
+        }
+        else if (g_state == STATE_PLAYING) {
+            UpdateLevel1();
+            RenderLevel1(memDC);
+        }
+        else if (g_state == STATE_PAUSED) {
+            RenderLevel1(memDC); // Рисуем застывший уровень на фоне
+            RenderMenu(memDC);   // Поверх рисуем меню паузы (сделаем это в Menu.cpp)
+        }
+        else if (g_state == STATE_GAME_OVER) {
+            RenderLevel1(memDC); 
+            RenderGameOver(memDC);
+        }
+        else if (g_state == STATE_COMPLETE) {
+            RenderLevel1(memDC);
+            RenderComplete(memDC);
+        }
 
         BitBlt(hdc, 0, 0, 800, 600, memDC, 0, 0, SRCCOPY);
         Sleep(16); 
