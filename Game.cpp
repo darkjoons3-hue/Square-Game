@@ -7,6 +7,9 @@ HINSTANCE g_hInst = nullptr;
 HWND g_hWnd = nullptr;
 bool g_running = true;
 
+bool g_hasSeenDisclaimer = false;
+bool g_hasSeenStory = false;
+
 int g_storyPage = 0;
 int g_charIndex = 0;
 DWORD g_typeTimer = 0;
