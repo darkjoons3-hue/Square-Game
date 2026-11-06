@@ -10,7 +10,6 @@ POINT g_mousePos = { 400, 300 };
 POINT g_lastMousePos = { -1, -1 };
 float g_cursorAngle = 0.0f;
 
-// Глобальная коллекция для нашего шрифта
 PrivateFontCollection g_pfc;
 FontFamily* g_fontFamily = nullptr;
 
@@ -28,10 +27,8 @@ void DrawCustomCursor(HDC hdc) {
     graphics.DrawPolygon(&outlinePen, points, 3);
 }
 
-// Универсальная функция отрисовки текста НАШИМ шрифтом
 void DrawTextCustom(HDC hdc, const wchar_t* text, RECT rc, int size, Color color, bool center = true) {
     Graphics graphics(hdc);
-    // Этот параметр делает шрифт пиксельным и четким (без размытия)
     graphics.SetTextRenderingHint(TextRenderingHintSingleBitPerPixelGridFit);
     
     Gdiplus::Font* font;
@@ -57,29 +54,20 @@ void DrawTextCustom(HDC hdc, const wchar_t* text, RECT rc, int size, Color color
 }
 
 void InitMenu() {
-    // Загружаем шрифт напрямую из файла
     if (g_pfc.GetFamilyCount() == 0) {
         g_pfc.AddFontFile(L"assets\\Monodetermination.ttf");
-        
-        // --- ИСПРАВЛЕННЫЙ БЛОК ---
         INT numFound = 0;
-        // GetFamilyCount() возвращает количество, не принимает аргументов
         INT count = g_pfc.GetFamilyCount(); 
-        
         if (count > 0) {
             FontFamily* families = new FontFamily[count];
-            // GetFamilies принимает count, массив и указатель для numFound
             g_pfc.GetFamilies(count, families, &numFound);
-            
             if (numFound > 0) {
                 WCHAR familyName[LF_FACESIZE];
                 families[0].GetFamilyName(familyName);
-                // Создаем FontFamily, привязанный к приватной коллекции
                 g_fontFamily = new FontFamily(familyName, &g_pfc);
             }
             delete[] families;
         }
-        // -------------------------
     }
     g_disclaimerAlpha = 0.0f;
     g_menuAlpha = 0.0f;
@@ -216,6 +204,25 @@ void RenderMenu(HDC hdc) {
         if (g_charIndex >= (int)g_currentText.length()) {
             RECT hintRect = { 0, 500, 800, 550 };
             DrawTextCustom(hdc, L"[ \u041d\u0430\u0436\u043c\u0438\u0442\u0435 Z \u0438\u043b\u0438 \u043a\u043b\u0438\u043a\u043d\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c ]", hintRect, 14, Color(255, 100, 100, 100));
+        }
+    }
+    else if (g_state == STATE_PAUSED) {
+        // Затемняем экран
+        SolidBrush darkOverlay(Color(200, 0, 0, 0));
+        graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
+
+        // Заголовок PAUSED
+        RECT titleRect = { 0, 50, 800, 150 };
+        DrawTextCustom(hdc, L"PAUSED", titleRect, 48, Color(255, 255, 255, 255));
+
+        // Кнопки паузы
+        const wchar_t* pauseBtns[] = { L"RESTART", L"ADVICE", L"ONITION", L"EXIT" };
+        for (int i = 0; i < 4; i++) {
+            RECT btnRect = { 300, 250 + (i * 50), 500, 290 + (i * 50) };
+            bool hover = (g_mousePos.x >= btnRect.left && g_mousePos.x <= btnRect.right && g_mousePos.y >= btnRect.top && g_mousePos.y <= btnRect.bottom);
+            
+            Color textColor = hover ? Color(255, 0, 180, 0) : Color(255, 255, 255, 255);
+            DrawTextCustom(hdc, pauseBtns[i], btnRect, 24, textColor);
         }
     }
 
