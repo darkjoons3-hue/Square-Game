@@ -95,19 +95,18 @@ void OnMouseClick(int x, int y) {
             g_state = STATE_OPTIONS;
         }
         else if (x >= exitBtn.left && x <= exitBtn.right && y >= exitBtn.top && y <= exitBtn.bottom) {
-            g_state = STATE_EXIT_CONFIRM; // Открываем окно подтверждения
+            g_state = STATE_EXIT_CONFIRM; 
         }
     }
     else if (g_state == STATE_EXIT_CONFIRM) {
-        // Кнопки ДА и НЕТ в окне подтверждения
         RECT yesBtn = { 250, 350, 350, 400 };
         RECT noBtn  = { 450, 350, 550, 400 };
 
         if (x >= yesBtn.left && x <= yesBtn.right && y >= yesBtn.top && y <= yesBtn.bottom) {
-            g_state = STATE_MENU; // Выходим в главное меню
+            g_state = STATE_MENU; 
         }
         else if (x >= noBtn.left && x <= noBtn.right && y >= noBtn.top && y <= noBtn.bottom) {
-            g_state = STATE_PAUSED; // Возвращаемся в паузу
+            g_state = STATE_PAUSED; 
         }
     }
     else if (g_state == STATE_GAME_OVER || g_state == STATE_COMPLETE) {
@@ -127,14 +126,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if (wParam == 'Z') { 
             AdvanceStory();
         }
-        // --- ДОБАВЛЕН ESC И ENTER ---
         else if (wParam == VK_ESCAPE || wParam == VK_RETURN) { 
             if (g_state == STATE_PLAYING) {
                 g_state = STATE_PAUSED;
             } else if (g_state == STATE_PAUSED) {
                 g_state = STATE_PLAYING;
             } else if (g_state == STATE_EXIT_CONFIRM) {
-                g_state = STATE_PAUSED; // Esc в окне выхода возвращает в паузу
+                g_state = STATE_PAUSED; 
             }
         }
         return 0;
@@ -192,24 +190,30 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             DispatchMessageW(&msg);
         }
 
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) {
+        // --- ИСПРАВЛЕНИЕ КУРСОРА В ПАУЗЕ ---
+        // Добавили STATE_PAUSED и STATE_EXIT_CONFIRM сюда, чтобы курсор обновлялся
+        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY || g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM) {
             UpdateMenu();
+        }
+        
+        if (g_state == STATE_PLAYING) {
+            UpdateLevel1();
+        }
+
+        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) {
             RenderMenu(memDC);
         }
         else if (g_state == STATE_PLAYING) {
-            UpdateLevel1();
             RenderLevel1(memDC);
         }
         else if (g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM) {
-            RenderLevel1(memDC); // Рисуем застывший уровень
-            RenderMenu(memDC);   // Поверх него рисуем меню паузы или окно выхода
+            RenderLevel1(memDC); 
+            RenderMenu(memDC);   
         }
         else if (g_state == STATE_GAME_OVER) {
-            RenderLevel1(memDC); 
-            RenderGameOver(memDC);
+            RenderGameOver(memDC); // Уровень больше не рисуем, сразу Game Over
         }
         else if (g_state == STATE_COMPLETE) {
-            RenderLevel1(memDC);
             RenderComplete(memDC);
         }
 
