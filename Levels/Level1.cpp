@@ -19,7 +19,6 @@ float deathTimer = 0;
 Image* playerImg = nullptr;
 Image* blockImg = nullptr;
 
-// ОПТИМИЗАЦИЯ: Создаем шрифт 1 раз и храним глобально
 HFONT g_hudFont = nullptr;
 
 void RespawnPlayer() {
@@ -42,25 +41,24 @@ void InitLevel1() {
     if (!playerImg) playerImg = new Image(L"assets\\Player.png");
     if (!blockImg) blockImg = new Image(L"assets\\block.png");
 
-    // Создаем шрифт для HUD только один раз
     if (!g_hudFont) {
         g_hudFont = CreateFontW(24, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
     }
 
-    // 1. Стена слева (ОГРОМНАЯ, чтобы закрыть пустоту внизу)
-    platforms.push_back({0, 400, 50, 2000}); // Высота 2000 вместо 250
+    // 1. Стена слева (15 блоков = 750 пикселей)
+    platforms.push_back({0, 400, 50, 750}); 
 
     // 2. Потолок (РОВНО 5 блоков = 250px)
     platforms.push_back({50, 400, 250, 50});
 
-    // 3. Пол 1 (10 блоков = 500px, высота вниз 2000, чтобы был "остров")
-    platforms.push_back({50, 650, 500, 2000});
+    // 3. Пол 1 (10 блоков = 500px, высота вниз 15 блоков = 750px)
+    platforms.push_back({50, 650, 500, 750});
 
-    // 5. Пол 2 (4 блока = 200px, высота 2000)
-    platforms.push_back({650, 650, 200, 2000});
+    // 5. Пол 2 (4 блока = 200px)
+    platforms.push_back({650, 650, 200, 750});
 
-    // 7. Пол 3 (7 блоков = 350px, высота 2000)
-    platforms.push_back({950, 650, 350, 2000});
+    // 7. Пол 3 (7 блоков = 350px)
+    platforms.push_back({950, 650, 350, 750});
 
     RespawnPlayer();
 }
@@ -117,13 +115,15 @@ void UpdateLevel1() {
         }
     }
 
-    if (player.y > LEVEL_HEIGHT) {
+    // БЫСТРАЯ СМЕРТЬ (если Y > 800, то есть улетел за нижний край)
+    if (player.y > 800) {
         isFallingToDeath = true; 
     }
 
     if (!isFallingToDeath) {
         float targetCamX = player.x + player.size / 2 - 400; 
-        float targetCamY = player.y + player.size / 2 - 300; 
+        // КАМЕРА ПОДНЯТА: центрируем на 475 пикселе (внизу остается 2.5 блока)
+        float targetCamY = player.y + player.size / 2 - 475; 
         cameraX += (targetCamX - cameraX) * 0.1f;
         cameraY += (targetCamY - cameraY) * 0.1f;
     } else {
@@ -139,8 +139,6 @@ void UpdateLevel1() {
 
 void RenderLevel1(HDC hdc) {
     Graphics graphics(hdc);
-    
-    // МАГИЯ: Отключаем сглаживание, чтобы не было ореолов у блоков!
     graphics.SetInterpolationMode(InterpolationModeNearestNeighbor);
     
     SolidBrush bg(Color(255, 255, 255, 255));
@@ -164,10 +162,8 @@ void RenderLevel1(HDC hdc) {
         graphics.FillRectangle(&playerBrush, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     }
 
-    // --- ОТРИСОВКА HUD ---
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0)); 
-    
     HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
 
     TextOutW(hdc, 20, 20, L"LEVEL 1", 7);
@@ -201,18 +197,24 @@ void RenderGameOver(HDC hdc) {
         return;
     }
 
+    // Белый фон
     Graphics graphics(hdc);
     SolidBrush bg(Color(255, 255, 255, 255)); 
     graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
+    // Черный текст GAME OVER без окон и рамок
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0));
-    HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
+    
+    // Используем большой шрифт для драматизма
+    HFONT fontBig = CreateFontW(64, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
+    HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
 
     RECT textRect = { 0, 0, 800, 600 };
     DrawTextW(hdc, L"GAME OVER!", -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     
     SelectObject(hdc, oldFont);
+    DeleteObject(fontBig);
 }
 
 void RenderComplete(HDC hdc) {
