@@ -15,6 +15,7 @@ Player player;
 
 bool isFallingToDeath = false;
 float deathTimer = 0;
+DWORD deathStartTime = 0; 
 
 Image* playerImg = nullptr;
 Image* blockImg = nullptr;
@@ -31,7 +32,6 @@ void RespawnPlayer() {
     isFallingToDeath = false;
     deathTimer = 0;
     g_gameOverTimer = 0;
-    g_levelStartTime = GetTickCount(); 
 }
 
 void InitLevel1() {
@@ -45,19 +45,10 @@ void InitLevel1() {
         g_hudFont = CreateFontW(24, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
     }
 
-    // 1. Стена слева (15 блоков = 750 пикселей)
     platforms.push_back({0, 400, 50, 750}); 
-
-    // 2. Потолок (РОВНО 5 блоков = 250px)
     platforms.push_back({50, 400, 250, 50});
-
-    // 3. Пол 1 (10 блоков = 500px, высота вниз 15 блоков = 750px)
     platforms.push_back({50, 650, 500, 750});
-
-    // 5. Пол 2 (4 блока = 200px)
     platforms.push_back({650, 650, 200, 750});
-
-    // 7. Пол 3 (7 блоков = 350px)
     platforms.push_back({950, 650, 350, 750});
 
     RespawnPlayer();
@@ -66,7 +57,7 @@ void InitLevel1() {
 void UpdateLevel1() {
     if (isFallingToDeath) {
         deathTimer += 1.0f;
-        if (deathTimer > 180.0f) { 
+        if (deathTimer > 30.0f) { // 0.5 секунды при 60 FPS
             g_state = STATE_GAME_OVER;
             g_gameOverTimer = GetTickCount();
         }
@@ -115,14 +106,13 @@ void UpdateLevel1() {
         }
     }
 
-    // БЫСТРАЯ СМЕРТЬ (если Y > 800, то есть улетел за нижний край)
     if (player.y > 800) {
         isFallingToDeath = true; 
+        deathStartTime = GetTickCount();
     }
 
     if (!isFallingToDeath) {
         float targetCamX = player.x + player.size / 2 - 400; 
-        // КАМЕРА ПОДНЯТА: центрируем на 475 пикселе (внизу остается 2.5 блока)
         float targetCamY = player.y + player.size / 2 - 475; 
         cameraX += (targetCamX - cameraX) * 0.1f;
         cameraY += (targetCamY - cameraY) * 0.1f;
@@ -168,15 +158,24 @@ void RenderLevel1(HDC hdc) {
 
     TextOutW(hdc, 20, 20, L"LEVEL 1", 7);
 
-    DWORD elapsed = GetTickCount() - g_levelStartTime;
-    int ms = elapsed % 1000;
-    int totalSec = elapsed / 1000;
+    DWORD displayTime = isFallingToDeath ? (deathStartTime - g_levelStartTime) : (GetTickCount() - g_levelStartTime);
+    int ms = displayTime % 1000;
+    int totalSec = displayTime / 1000;
     int sec = totalSec % 60;
     int min = totalSec / 60;
     
     wchar_t timeStr[32];
     swprintf_s(timeStr, L"%02d:%02d:%03d", min, sec, ms);
     TextOutW(hdc, 20, 50, timeStr, wcslen(timeStr));
+
+    // ОТРИСОВКА FPS
+    if (g_showFps) {
+        wchar_t fpsStr[32];
+        swprintf_s(fpsStr, L"FPS: %d", g_fps);
+        SetTextColor(hdc, RGB(100, 100, 100)); // Серый, чтобы не отвлекал
+        TextOutW(hdc, 20, 80, fpsStr, wcslen(fpsStr));
+        SetTextColor(hdc, RGB(0, 0, 0)); // Возвращаем черный
+    }
 
     SolidBrush pauseBtnBg(Color(255, 230, 230, 230));
     graphics.FillRectangle(&pauseBtnBg, 750, 10, 40, 40);
@@ -194,19 +193,17 @@ void RenderGameOver(HDC hdc) {
     if (GetTickCount() - g_gameOverTimer > 3000) {
         InitLevel1();
         g_state = STATE_PLAYING;
+        g_levelStartTime = GetTickCount(); 
         return;
     }
 
-    // Белый фон
     Graphics graphics(hdc);
     SolidBrush bg(Color(255, 255, 255, 255)); 
     graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
-    // Черный текст GAME OVER без окон и рамок
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0));
     
-    // Используем большой шрифт для драматизма
     HFONT fontBig = CreateFontW(64, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
     HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
 
