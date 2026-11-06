@@ -9,9 +9,11 @@ enum GameState {
     STATE_MENU,
     STATE_OPTIONS,
     STATE_STORY,
+    STATE_LOADING,     // НОВОЕ: Экран загрузки
+    STATE_ADVICE,      // НОВОЕ: Окно советов
     STATE_PLAYING,
     STATE_PAUSED,
-    STATE_EXIT_CONFIRM, // НОВОЕ: Окно "Вы точно хотите выйти?"
+    STATE_EXIT_CONFIRM, 
     STATE_GAME_OVER,
     STATE_COMPLETE
 };
@@ -21,13 +23,18 @@ extern HINSTANCE g_hInst;
 extern HWND g_hWnd;
 extern bool g_running;
 
+// Для истории
 extern int g_storyPage;
 extern int g_charIndex;      
 extern DWORD g_typeTimer;    
 extern std::wstring g_currentText; 
 
+// Для уровня и загрузки
 extern DWORD g_levelStartTime;
 extern DWORD g_gameOverTimer;
+extern DWORD g_loadingTimer;
+extern bool g_hasSeenAdvice;
+extern bool g_adviceFromPause;
 
 void InitMenu();
 void UpdateMenu();
