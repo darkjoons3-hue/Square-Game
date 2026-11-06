@@ -28,10 +28,6 @@ struct LockDoor {
     float x, y, w, h;
 };
 
-struct FinishFlag {
-    float x, y;
-};
-
 void InitLevel1();
 void UpdateLevel1();
 void RenderLevel1(HDC hdc);
