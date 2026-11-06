@@ -104,6 +104,7 @@ void RenderMenu(HDC hdc) {
     Graphics graphics(hdc);
 
     if (g_state == STATE_DISCLAIMER) {
+        // ... (без изменений)
         SolidBrush bg(Color(255, 15, 15, 15));
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
@@ -132,6 +133,7 @@ void RenderMenu(HDC hdc) {
         }
     } 
     else if (g_state == STATE_MENU || g_state == STATE_OPTIONS) {
+        // ... (без изменений)
         SolidBrush bg(Color(255, 255, 255, 255)); 
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
@@ -192,6 +194,7 @@ void RenderMenu(HDC hdc) {
         }
     }
     else if (g_state == STATE_STORY) {
+        // ... (без изменений)
         SolidBrush bg(Color(255, 15, 15, 15)); 
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
@@ -205,6 +208,60 @@ void RenderMenu(HDC hdc) {
             RECT hintRect = { 0, 500, 800, 550 };
             DrawTextCustom(hdc, L"[ \u041d\u0430\u0436\u043c\u0438\u0442\u0435 Z \u0438\u043b\u0438 \u043a\u043b\u0438\u043a\u043d\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c ]", hintRect, 14, Color(255, 100, 100, 100));
         }
+    }
+    else if (g_state == STATE_LOADING) {
+        // НОВЫЙ ЭКРАН ЗАГРУЗКИ
+        SolidBrush bg(Color(255, 15, 15, 15));
+        graphics.FillRectangle(&bg, 0, 0, 800, 600);
+
+        std::wstring loadText = L"LOADING";
+        // Анимация точек (каждые 300 мс добавляем точку)
+        int dots = (GetTickCount() / 300) % 4;
+        for (int i = 0; i < dots; i++) loadText += L".";
+
+        RECT loadRect = { 0, 0, 800, 600 };
+        DrawTextCustom(hdc, loadText.c_str(), loadRect, 36, Color(255, 255, 255, 255));
+    }
+    else if (g_state == STATE_ADVICE) {
+        // НОВОЕ ОКНО СОВЕТОВ
+        SolidBrush darkOverlay(Color(200, 0, 0, 0));
+        graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
+
+        RECT modalRect = { 150, 100, 650, 500 };
+        SolidBrush modalBg(Color(255, 240, 240, 240)); // Белое окно
+        graphics.FillRectangle(&modalBg, modalRect.left, modalRect.top, 500, 400);
+        
+        Pen borderPen(Color(255, 0, 0, 0), 3);
+        graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 500, 400);
+
+        // Заголовок
+        RECT titleRect = { 150, 120, 650, 160 };
+        DrawTextCustom(hdc, L"\u0423\u041f\u0420\u0410\u0412\u041b\u0415\u041d\u0418\u0415", titleRect, 32, Color(255, 0, 0, 0));
+
+        // Текст совета
+        RECT text1Rect = { 150, 180, 650, 220 };
+        DrawTextCustom(hdc, L"\u0421\u0442\u0440\u0435\u043b\u043a\u0438 \u2190 \u2192 \u0438\u043b\u0438 A / D", text1Rect, 24, Color(255, 0, 0, 0));
+        RECT text2Rect = { 150, 210, 650, 240 };
+        DrawTextCustom(hdc, L"\u0414\u0432\u0438\u0436\u0435\u043d\u0438\u0435", text2Rect, 18, Color(255, 80, 80, 80));
+
+        RECT text3Rect = { 150, 260, 650, 300 };
+        DrawTextCustom(hdc, L"\u041f\u0420\u041e\u0411\u0415\u041b \u0438\u043b\u0438 \u0421\u0442\u0440\u0435\u043b\u043a\u0430 \u2191", text3Rect, 24, Color(255, 0, 0, 0));
+        RECT text4Rect = { 150, 290, 650, 320 };
+        DrawTextCustom(hdc, L"\u041f\u0440\u044b\u0436\u043e\u043a", text4Rect, 18, Color(255, 80, 80, 80));
+
+        // Примечание
+        RECT noteRect = { 150, 360, 650, 400 };
+        DrawTextCustom(hdc, L"\u0415\u0441\u043b\u0438 \u0432\u044b \u0437\u0430\u0431\u044b\u043b\u0438 \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435, \u0435\u0433\u043e \u0432\u0441\u0435\u0433\u0434\u0430\n\u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432 \u043c\u0435\u043d\u044e \u043f\u0430\u0443\u0437\u044b.", noteRect, 14, Color(255, 80, 80, 80));
+
+        // Кнопка Понятно
+        RECT btnOk = { 300, 450, 500, 500 };
+        bool hover = (g_mousePos.x >= btnOk.left && g_mousePos.x <= btnOk.right && g_mousePos.y >= btnOk.top && g_mousePos.y <= btnOk.bottom);
+        SolidBrush btnBrush(hover ? Color(255, 200, 200, 200) : Color(255, 180, 180, 180));
+        graphics.FillRectangle(&btnBrush, btnOk.left, btnOk.top, 200, 50);
+        Pen btnBorder(Color(255, 0, 0, 0), 2);
+        graphics.DrawRectangle(&btnBorder, btnOk.left, btnOk.top, 200, 50);
+
+        DrawTextCustom(hdc, L"\u041f\u041e\u041d\u042f\u0422\u041d\u041e", btnOk, 20, hover ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0));
     }
     else if (g_state == STATE_PAUSED) {
         SolidBrush darkOverlay(Color(200, 0, 0, 0));
@@ -223,24 +280,20 @@ void RenderMenu(HDC hdc) {
         }
     }
     else if (g_state == STATE_EXIT_CONFIRM) {
-        // Затемнение
         SolidBrush darkOverlay(Color(200, 0, 0, 0));
         graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
 
-        // Окно подтверждения
         RECT modalRect = { 200, 150, 600, 450 };
-        SolidBrush modalBg(Color(255, 240, 240, 240)); // Светло-серый
+        SolidBrush modalBg(Color(255, 240, 240, 240)); 
         graphics.FillRectangle(&modalBg, modalRect.left, modalRect.top, 400, 300);
         
         Pen borderPen(Color(255, 0, 0, 0), 3);
         graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 400, 300);
 
-        // Текст
         RECT textRect = { 200, 180, 600, 280 };
         DrawTextCustom(hdc, L"\u0412\u044b \u0442\u043e\u0447\u043d\u043e \u0445\u043e\u0442\u0438\u0442\u0435 \u0432\u044b\u0439\u0442\u0438?", textRect, 24, Color(255, 0, 0, 0));
         DrawTextCustom(hdc, L"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0443\u0440\u043e\u0432\u043d\u044f \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d.", RECT{200, 220, 600, 260}, 16, Color(255, 80, 80, 80));
 
-        // Кнопки ДА / НЕТ
         RECT yesBtn = { 250, 350, 350, 400 };
         RECT noBtn  = { 450, 350, 550, 400 };
 
