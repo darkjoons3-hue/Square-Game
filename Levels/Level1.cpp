@@ -72,7 +72,7 @@ void InitLevel1() {
 
     // Огромный потолок
     platforms.push_back({0, 50, LEVEL_WIDTH, 50});
-    // Шипы на потолке (чтобы жизнь медом не казалась при ходьбе по потолку)
+    // Шипы на потолке
     spikes.push_back({800, 100, 100, 25, true}); 
     spikes.push_back({1500, 100, 150, 25, true});
 
@@ -83,7 +83,6 @@ void InitLevel1() {
     keyItem.y = 600;
 
     // Замок (высота 3 блока = 150, ширина 1 блок = 50)
-    // Стоит на полу (Y = 650 - 150 = 500)
     lockDoor.x = 1300;
     lockDoor.y = 500;
     lockDoor.w = 50;
@@ -110,14 +109,14 @@ void UpdateLevel1() {
     else if (GetAsyncKeyState(VK_RIGHT) & 0x8000 || GetAsyncKeyState('D') & 0x8000) player.vx = 6;
     else player.vx = 0;
 
-    // Прыжок (настроен под 1.5 блока)
+    // Прыжок
     if ((GetAsyncKeyState(VK_SPACE) & 0x8000 || GetAsyncKeyState(VK_UP) & 0x8000 || GetAsyncKeyState('W') & 0x8000) && player.onGround) {
-        player.vy = -15.0f; // Сила прыжка
+        player.vy = -15.0f; 
         player.onGround = false;
     }
 
     // Физика
-    player.vy += 1.5f; // Гравитация (выше, чтобы прыжок был коротким)
+    player.vy += 1.5f; 
     player.x += player.vx;
 
     // Коллизия по X (с платформами)
@@ -196,9 +195,8 @@ void UpdateLevel1() {
         isFallingToDeath = true; 
     }
 
-    // Проверка шипов (хитбокс уменьшен, чтобы не умирать от воздуха рядом)
+    // Проверка шипов
     for (const auto& s : spikes) {
-        // Хитбокс шипов: 40 в ширину, 15 в высоту (только кончики)
         float sX = s.x + 5;
         float sY = s.pointingDown ? s.y : s.y + s.h - 15;
         
@@ -240,16 +238,15 @@ void RenderLevel1(HDC hdc) {
                 graphics.DrawImage(blockImg, (INT)(p.x - cameraX), (INT)(p.y - cameraY), (INT)p.w, (INT)p.h);
             } else {
                 SolidBrush platBrush(Color(255, 0, 0, 0));
-                graphics.FillRectangle(&platBrush, (REAL)(p.x - cameraX), (REAL)(p.y - cameraY), (REAL)p.w, (REAL)p.h);
+                graphics.FillRectangle(&platBrush, (INT)(p.x - cameraX), (INT)(p.y - cameraY), (INT)p.w, (INT)p.h);
             }
         }
     }
 
     // 2. Шипы (Рисуем GDI+)
-    SolidBrush spikeBrush(Color(255, 200, 50, 50)); // Красные
+    SolidBrush spikeBrush(Color(255, 200, 50, 50)); 
     for (const auto& s : spikes) {
         if (s.x + s.w > cameraX && s.x < cameraX + 800 && s.y + s.h > cameraY && s.y < cameraY + 600) {
-            // Рисуем количество шипов в зависимости от ширины (каждые 50px - новый шип)
             int count = (int)(s.w / 50);
             for (int i = 0; i < count; i++) {
                 PointF points[3];
@@ -270,49 +267,45 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // 3. Ключ (Рисуем GDI+ - желтый кружок с палочкой)
+    // 3. Ключ (Рисуем GDI+)
     if (!keyItem.collected) {
         if (keyItem.x + 50 > cameraX && keyItem.x < cameraX + 800 && keyItem.y + 50 > cameraY && keyItem.y < cameraY + 600) {
             float drawX = keyItem.x - cameraX + 25;
             float drawY = keyItem.y - cameraY + 25;
-            SolidBrush keyBrush(Color(255, 255, 215, 0)); // Золотой
-            Pen keyPen(Color(255, 200, 150, 0), 5);
+            SolidBrush keyBrush(Color(255, 255, 215, 0)); 
             
-            // Головка ключа
-            graphics.FillEllipse(&keyBrush, drawX - 10, drawY - 10, 20, 20);
-            // Стержень
-            graphics.FillRectangle(&keyBrush, drawX, drawY - 3, 20, 6);
-            // Зубцы
-            graphics.FillRectangle(&keyBrush, drawX + 12, drawY + 3, 4, 6);
-            graphics.FillRectangle(&keyBrush, drawX + 18, drawY + 3, 4, 8);
+            // Принудительно приводим типы к INT
+            graphics.FillEllipse(&keyBrush, (INT)(drawX - 10), (INT)(drawY - 10), 20, 20);
+            graphics.FillRectangle(&keyBrush, (INT)drawX, (INT)(drawY - 3), 20, 6);
+            graphics.FillRectangle(&keyBrush, (INT)(drawX + 12), (INT)(drawY + 3), 4, 6);
+            graphics.FillRectangle(&keyBrush, (INT)(drawX + 18), (INT)(drawY + 3), 4, 8);
         }
     }
 
-    // 4. Замок (Рисуем GDI+ - темный прямоугольник с замочной скважиной)
+    // 4. Замок (Рисуем GDI+)
     if (!hasKey) {
         if (lockDoor.x + lockDoor.w > cameraX && lockDoor.x < cameraX + 800 && lockDoor.y + lockDoor.h > cameraY && lockDoor.y < cameraY + 600) {
             float drawX = lockDoor.x - cameraX;
             float drawY = lockDoor.y - cameraY;
-            SolidBrush lockBrush(Color(255, 80, 80, 80)); // Темно-серый
-            graphics.FillRectangle(&lockBrush, drawX, drawY, lockDoor.w, lockDoor.h);
+            SolidBrush lockBrush(Color(255, 80, 80, 80)); 
+            graphics.FillRectangle(&lockBrush, (INT)drawX, (INT)drawY, (INT)lockDoor.w, (INT)lockDoor.h);
             
-            // Замочная скважина (черная)
             SolidBrush holeBrush(Color(255, 0, 0, 0));
-            graphics.FillEllipse(&holeBrush, drawX + 15, drawY + 50, 20, 20);
-            graphics.FillRectangle(&holeBrush, drawX + 20, drawY + 65, 10, 20);
+            graphics.FillEllipse(&holeBrush, (INT)(drawX + 15), (INT)(drawY + 50), 20, 20);
+            graphics.FillRectangle(&holeBrush, (INT)(drawX + 20), (INT)(drawY + 65), 10, 20);
         }
     }
 
-    // 5. Финиш (Рисуем GDI+ - две зеленые стрелки <<)
+    // 5. Финиш (Рисуем GDI+)
     if (finishFlag.x + 50 > cameraX && finishFlag.x < cameraX + 800 && finishFlag.y + 50 > cameraY && finishFlag.y < cameraY + 600) {
         float drawX = finishFlag.x - cameraX + 25;
         float drawY = finishFlag.y - cameraY + 25;
-        Pen finishPen(Color(255, 0, 150, 0), 6); // Зеленый
-        graphics.DrawLine(&finishPen, drawX, drawY - 15, drawX - 15, drawY);
-        graphics.DrawLine(&finishPen, drawX - 15, drawY, drawX, drawY + 15);
+        Pen finishPen(Color(255, 0, 150, 0), 6); 
+        graphics.DrawLine(&finishPen, (INT)drawX, (INT)(drawY - 15), (INT)(drawX - 15), (INT)drawY);
+        graphics.DrawLine(&finishPen, (INT)(drawX - 15), (INT)drawY, (INT)drawX, (INT)(drawY + 15));
         
-        graphics.DrawLine(&finishPen, drawX + 15, drawY - 15, drawX, drawY);
-        graphics.DrawLine(&finishPen, drawX, drawY, drawX + 15, drawY + 15);
+        graphics.DrawLine(&finishPen, (INT)(drawX + 15), (INT)(drawY - 15), (INT)drawX, (INT)drawY);
+        graphics.DrawLine(&finishPen, (INT)drawX, (INT)drawY, (INT)(drawX + 15), (INT)(drawY + 15));
     }
 
     // 6. Игрок (player.png)
@@ -320,7 +313,7 @@ void RenderLevel1(HDC hdc) {
         graphics.DrawImage(playerImg, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     } else {
         SolidBrush playerBrush(Color(255, 100, 100, 100)); 
-        graphics.FillRectangle(&playerBrush, (REAL)(player.x - cameraX), (REAL)(player.y - cameraY), (REAL)player.size, (REAL)player.size);
+        graphics.FillRectangle(&playerBrush, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     }
 }
 
