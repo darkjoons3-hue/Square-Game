@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include "Game.h"
+#include <cstdio>
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
@@ -11,6 +12,47 @@
 #pragma comment(linker, "/ENTRY:wWinMainCRTStartup")
 
 using namespace Gdiplus;
+
+// --- СИСТЕМА СОХРАНЕНИЙ ---
+std::string GetSaveFilePath() {
+    char path[MAX_PATH];
+    GetModuleFileNameA(NULL, path, MAX_PATH);
+    std::string exePath(path);
+    size_t pos = exePath.find_last_of("\\/");
+    if (pos != std::string::npos) {
+        return exePath.substr(0, pos + 1) + "save.dat";
+    }
+    return "save.dat";
+}
+
+void LoadGame() {
+    FILE* f = fopen(GetSaveFilePath().c_str(), "r");
+    if (f) {
+        int disc, story;
+        if (fscanf(f, "%d %d", &disc, &story) == 2) {
+            g_hasSeenDisclaimer = (disc == 1);
+            g_hasSeenStory = (story == 1);
+        }
+        fclose(f);
+    }
+}
+
+void SaveGame() {
+    FILE* f = fopen(GetSaveFilePath().c_str(), "w");
+    if (f) {
+        fprintf(f, "%d %d", g_hasSeenDisclaimer ? 1 : 0, g_hasSeenStory ? 1 : 0);
+        fclose(f);
+    }
+}
+
+void ResetGame() {
+    remove(GetSaveFilePath().c_str());
+    // Перезапуск приложения
+    wchar_t szPath[MAX_PATH];
+    GetModuleFileNameW(NULL, szPath, MAX_PATH);
+    ShellExecuteW(NULL, L"open", szPath, NULL, NULL, SW_SHOW);
+    exit(0);
+}
 
 const wchar_t* storyPages[] = {
     L"\u042d\u0442\u043e \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e \u043e\u0431\u044b\u043a\u043d\u043e\u0432\u0435\u043d\u043d\u043e\u0433\u043e \u0447\u0435\u0440\u043d\u043e\u0433\u043e \u043a\u0443\u0431\u0438\u043a\u0430...",
@@ -26,6 +68,8 @@ void AdvanceStory() {
         } else {
             g_storyPage++;
             if (g_storyPage >= TOTAL_PAGES) {
+                g_hasSeenStory = true;
+                SaveGame(); // Сохраняем прогресс истории
                 g_state = STATE_LOADING;
                 g_nextState = g_hasSeenAdvice ? STATE_PLAYING : STATE_ADVICE;
                 g_loadingTimer = GetTickCount();
@@ -42,6 +86,8 @@ void OnMouseClick(int x, int y) {
     if (g_state == STATE_DISCLAIMER) {
         RECT btnRect = { 300, 500, 500, 550 };
         if (x >= btnRect.left && x <= btnRect.right && y >= btnRect.top && y <= btnRect.bottom) {
+            g_hasSeenDisclaimer = true;
+            SaveGame(); // Сохраняем, что прочитали дисклеймер
             g_state = STATE_MENU;
         }
     } 
@@ -50,12 +96,19 @@ void OnMouseClick(int x, int y) {
             RECT btnRect = { 300, 350 + (i * 50), 500, 390 + (i * 50) };
             if (x >= btnRect.left && x <= btnRect.right && y >= btnRect.top && y <= btnRect.bottom) {
                 if (i == 0) { 
-                    g_state = STATE_LOADING;
-                    g_nextState = STATE_STORY;
-                    g_loadingTimer = GetTickCount();
-                    g_storyPage = 0;
-                    g_currentText = storyPages[0];
-                    g_charIndex = 0;
+                    if (g_hasSeenStory) {
+                        // Пропускаем историю
+                        g_state = STATE_LOADING;
+                        g_nextState = g_hasSeenAdvice ? STATE_PLAYING : STATE_ADVICE;
+                        g_loadingTimer = GetTickCount();
+                    } else {
+                        g_state = STATE_LOADING;
+                        g_nextState = STATE_STORY;
+                        g_loadingTimer = GetTickCount();
+                        g_storyPage = 0;
+                        g_currentText = storyPages[0];
+                        g_charIndex = 0;
+                    }
                 } else if (i == 1) {
                     g_prevState = STATE_MENU;
                     g_state = STATE_OPTIONS;
@@ -68,12 +121,16 @@ void OnMouseClick(int x, int y) {
     else if (g_state == STATE_OPTIONS) {
         RECT btnBack = { 500, 375, 580, 415 };
         RECT btnFps = { 400, 375, 480, 415 };
+        RECT btnReset = { 400, 430, 480, 470 }; // НОВАЯ КНОПКА RESET
 
         if (x >= btnBack.left && x <= btnBack.right && y >= btnBack.top && y <= btnBack.bottom) {
             g_state = g_prevState; 
         }
         else if (x >= btnFps.left && x <= btnFps.right && y >= btnFps.top && y <= btnFps.bottom) {
             g_showFps = !g_showFps;
+        }
+        else if (x >= btnReset.left && x <= btnReset.right && y >= btnReset.top && y <= btnReset.bottom) {
+            ResetGame(); // СБРОС
         }
     }
     else if (g_state == STATE_STORY) {
@@ -175,6 +232,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
     g_hInst = hInst;
+
+    LoadGame(); // ЗАГРУЖАЕМ СОХРАНЕНИЯ ПРИ СТАРТЕ
+    if (g_hasSeenDisclaimer) {
+        g_state = STATE_MENU; // Если видели дисклеймер - сразу в меню
+    }
 
     AddFontResourceExW(L"assets\\Monodetermination.ttf", FR_PRIVATE, 0);
 
