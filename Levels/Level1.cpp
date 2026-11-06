@@ -45,11 +45,32 @@ void InitLevel1() {
         g_hudFont = CreateFontW(24, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
     }
 
+    // 1. Стена слева (15 блоков)
     platforms.push_back({0, 400, 50, 750}); 
+
+    // 2. Потолок (5 блоков)
     platforms.push_back({50, 400, 250, 50});
+
+    // 3. Пол 1 (10 блоков)
     platforms.push_back({50, 650, 500, 750});
+
+    // 5. Пол 2 (4 блока)
     platforms.push_back({650, 650, 200, 750});
+
+    // 7. Пол 3 (7 блоков) -> Остров
     platforms.push_back({950, 650, 350, 750});
+
+    // === ЛЕСЕНКА В СТИЛЕ GEOMETRY DASH ===
+    // 8. Первый бугор (на 4-м блоке острова)
+    platforms.push_back({1100, 600, 50, 50}); // Высота 1 блок
+
+    // 9. Второй бугор (на 6-м блоке острова)
+    platforms.push_back({1200, 550, 50, 100}); // Высота 2 блока
+
+    // 10. Новый остров (впритык к 7-му блоку, высота 3 блока, длина 2)
+    platforms.push_back({1300, 500, 100, 150}); // Высота 3 блока
+
+    // Ключ и Замок мы добавим потом, пока что тут просто высокий остров
 
     RespawnPlayer();
 }
@@ -57,7 +78,7 @@ void InitLevel1() {
 void UpdateLevel1() {
     if (isFallingToDeath) {
         deathTimer += 1.0f;
-        if (deathTimer > 30.0f) { // 0.5 секунды при 60 FPS
+        if (deathTimer > 30.0f) { 
             g_state = STATE_GAME_OVER;
             g_gameOverTimer = GetTickCount();
         }
@@ -168,13 +189,12 @@ void RenderLevel1(HDC hdc) {
     swprintf_s(timeStr, L"%02d:%02d:%03d", min, sec, ms);
     TextOutW(hdc, 20, 50, timeStr, wcslen(timeStr));
 
-    // ОТРИСОВКА FPS
     if (g_showFps) {
         wchar_t fpsStr[32];
         swprintf_s(fpsStr, L"FPS: %d", g_fps);
-        SetTextColor(hdc, RGB(100, 100, 100)); // Серый, чтобы не отвлекал
+        SetTextColor(hdc, RGB(100, 100, 100));
         TextOutW(hdc, 20, 80, fpsStr, wcslen(fpsStr));
-        SetTextColor(hdc, RGB(0, 0, 0)); // Возвращаем черный
+        SetTextColor(hdc, RGB(0, 0, 0));
     }
 
     SolidBrush pauseBtnBg(Color(255, 230, 230, 230));
