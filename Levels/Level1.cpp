@@ -23,7 +23,6 @@ DWORD deathStartTime = 0;
 
 Image* playerImg = nullptr;
 Image* blockImg = nullptr;
-Image* keyImg = nullptr;   
 Image* lockImg = nullptr;  
 
 HFONT g_hudFont = nullptr;
@@ -48,7 +47,6 @@ void InitLevel1() {
 
     if (!playerImg) playerImg = new Image(L"assets\\Player.png");
     if (!blockImg) blockImg = new Image(L"assets\\block.png");
-    if (!keyImg) keyImg = new Image(L"assets\\key.png");    
     if (!lockImg) lockImg = new Image(L"assets\\Lock.png");  
 
     if (!g_hudFont) {
@@ -69,11 +67,11 @@ void InitLevel1() {
     // Тонкая платформа
     platforms.push_back({1397, 500, 403, 52}); 
 
-    // Шипы на платформе (УБРАН ПОСЛЕДНИЙ)
+    // Шипы на платформе
     spikes.push_back({1500, 475, 50, 25, false}); 
     spikes.push_back({1550, 475, 50, 25, false}); 
 
-    // Шипы внизу (УБРАН ТОТ, ЧТО БЛИЖЕ К КОНЦУ)
+    // Шипы внизу
     spikes.push_back({1500, 625, 25, 25, false}); 
 
     // Ключ
@@ -194,7 +192,6 @@ void UpdateLevel1() {
         }
     }
 
-    // === УМНАЯ КАМЕРА С МЕРТВОЙ ЗОНОЙ ===
     if (!isFallingToDeath) {
         float targetCamX = player.x + player.size / 2 - 400; 
         cameraX += (targetCamX - cameraX) * 0.1f;
@@ -261,20 +258,23 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
+    // КЛЮЧ (Черный с белой обводкой и анимацией)
     if (!keyItem.collected) {
         if (keyItem.x + 50 > cameraX && keyItem.x < cameraX + 800 && keyItem.y + 50 > cameraY && keyItem.y < cameraY + 600) {
             float bobOffset = sinf(GetTickCount() / 200.0f) * 5.0f;
             float drawX = keyItem.x - cameraX;
             float drawY = keyItem.y - cameraY + bobOffset;
 
-            if (keyImg && keyImg->GetLastStatus() == Ok) {
-                graphics.DrawImage(keyImg, (INT)drawX, (INT)drawY, 50, 50);
-            } else {
-                SolidBrush keyBrush(Color(255, 255, 215, 0)); 
-                graphics.FillEllipse(&keyBrush, (INT)(drawX + 15), (INT)(drawY + 15), 20, 20);
-                graphics.FillRectangle(&keyBrush, (INT)(drawX + 25), (INT)(drawY + 22), 20, 6);
-            }
-            Pen whitePen(Color(255, 255, 255, 255), 2);
+            // Рисуем сам ключ (черный)
+            SolidBrush keyBrush(Color(255, 0, 0, 0)); 
+            graphics.FillEllipse(&keyBrush, (INT)(drawX + 10), (INT)(drawY + 10), 20, 20);
+            graphics.FillRectangle(&keyBrush, (INT)(drawX + 20), (INT)(drawY + 17), 25, 6);
+            graphics.FillRectangle(&keyBrush, (INT)(drawX + 35), (INT)(drawY + 23), 4, 8);
+            graphics.FillRectangle(&keyBrush, (INT)(drawX + 42), (INT)(drawY + 23), 4, 6);
+
+            // Белая пульсирующая обводка
+            int alpha = 150 + (int)(100 * sinf(GetTickCount() / 200.0f));
+            Pen whitePen(Color(alpha, 255, 255, 255), 3);
             graphics.DrawRectangle(&whitePen, (INT)drawX, (INT)drawY, 50, 50);
         }
     }
