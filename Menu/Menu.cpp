@@ -42,18 +42,29 @@ void UpdateMenu() {
 
     if (g_state == STATE_DISCLAIMER) {
         if (g_disclaimerAlpha < 1.0f) g_disclaimerAlpha += 0.01f;
-    } else if (g_state == STATE_MENU) {
+    } 
+    else if (g_state == STATE_MENU) {
         if (g_menuAlpha < 1.0f) g_menuAlpha += 0.02f;
+    }
+    else if (g_state == STATE_STORY) {
+        // ЛОГИКА ПЕЧАТНОЙ МАШИНКИ
+        if (g_charIndex < (int)g_currentText.length()) {
+            if (GetTickCount() - g_typeTimer > 50) { // Задержка между буквами (50 мс)
+                g_charIndex++;
+                g_typeTimer = GetTickCount();
+            }
+        }
     }
 }
 
 void RenderMenu(HDC hdc) {
     Graphics graphics(hdc);
 
-    HFONT fontBig = CreateFontW(32, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
-    HFONT fontNormal = CreateFontW(20, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
-    HFONT fontSmall = CreateFontW(16, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
-    HFONT fontTiny = CreateFontW(14, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Monodetermination");
+    // Четкий пиксельный шрифт
+    HFONT fontBig = CreateFontW(32, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
+    HFONT fontNormal = CreateFontW(24, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
+    HFONT fontSmall = CreateFontW(16, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
+    HFONT fontTiny = CreateFontW(14, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
 
     if (g_state == STATE_DISCLAIMER) {
         SolidBrush bg(Color(255, 15, 15, 15));
@@ -66,7 +77,6 @@ void RenderMenu(HDC hdc) {
         HFONT oldFont = (HFONT)SelectObject(hdc, fontNormal);
         
         RECT textRect = { 50, 100, 750, 450 };
-        // ПОЛНЫЙ ТЕКСТ В ЮНИКОДЕ (чтобы не было кракозябр)
         const wchar_t* disclaimer = 
             L"\u0412\u041d\u0418\u041c\u0410\u041d\u0418\u0415\n\n"
             L"\u0414\u0430\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u043d\u044b\u0439 \u043f\u0440\u043e\u0434\u0443\u043a\u0442 \u043d\u0435 \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u0432\u0438\u0440\u0443\u0441\u043e\u043c\n"
@@ -98,7 +108,7 @@ void RenderMenu(HDC hdc) {
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
         SolidBrush logoBrush(Color(255, 0, 0, 0));
-        graphics.FillRectangle(&logoBrush, 325, 150, 150, 150);
+        graphics.FillRectangle(&logoBrush, 360, 150, 80, 80);
 
         SetBkMode(hdc, TRANSPARENT);
         const wchar_t* buttons[] = { L"PLAY", L"ONITION", L"EXIT" };
@@ -113,7 +123,6 @@ void RenderMenu(HDC hdc) {
             DrawTextW(hdc, buttons[i], -1, &btnRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         }
 
-        // Версия в углу
         SetTextColor(hdc, RGB(100, 100, 100));
         SelectObject(hdc, fontTiny);
         RECT verRect = { 650, 560, 780, 590 };
@@ -163,6 +172,30 @@ void RenderMenu(HDC hdc) {
             SetTextColor(hdc, RGB(0, 0, 0));
             SelectObject(hdc, fontSmall);
             DrawTextW(hdc, L"BACK", -1, &backBtn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        }
+    }
+    else if (g_state == STATE_STORY) {
+        // ЭКРАН ИСТОРИИ
+        SolidBrush bg(Color(255, 15, 15, 15)); // Черный фон
+        graphics.FillRectangle(&bg, 0, 0, 800, 600);
+
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, RGB(255, 255, 255)); // Белый текст
+
+        // Отрисовка частичного текста
+        if (g_charIndex > 0 && g_charIndex <= (int)g_currentText.length()) {
+            std::wstring visibleText = g_currentText.substr(0, g_charIndex);
+            RECT textRect = { 100, 100, 700, 450 };
+            SelectObject(hdc, fontNormal);
+            DrawTextW(hdc, visibleText.c_str(), -1, &textRect, DT_CENTER | DT_TOP | DT_WORDBREAK);
+        }
+
+        // Подсказка внизу (появляется только когда текст допечатан)
+        if (g_charIndex >= (int)g_currentText.length()) {
+            SetTextColor(hdc, RGB(100, 100, 100));
+            SelectObject(hdc, fontTiny);
+            RECT hintRect = { 0, 500, 800, 550 };
+            DrawTextW(hdc, L"[ \u041d\u0430\u0436\u043c\u0438\u0442\u0435 Z \u0438\u043b\u0438 \u043a\u043b\u0438\u043a\u043d\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c ]", -1, &hintRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         }
     }
 
