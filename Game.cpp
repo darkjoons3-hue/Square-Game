@@ -12,3 +12,6 @@ std::wstring g_currentText = L"";
 
 DWORD g_levelStartTime = 0;
 DWORD g_gameOverTimer = 0;
+DWORD g_loadingTimer = 0;
+bool g_hasSeenAdvice = false;
+bool g_adviceFromPause = false;
