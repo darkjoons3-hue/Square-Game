@@ -19,11 +19,15 @@ enum GameState {
 };
 
 extern GameState g_state;
-extern GameState g_prevState;  // Откуда пришли (для кнопки Back)
-extern GameState g_nextState;  // Куда идти после загрузки
+extern GameState g_prevState;
+extern GameState g_nextState;
 extern HINSTANCE g_hInst;
 extern HWND g_hWnd;
 extern bool g_running;
+
+// Для сохранений
+extern bool g_hasSeenDisclaimer;
+extern bool g_hasSeenStory;
 
 extern int g_storyPage;
 extern int g_charIndex;      
@@ -35,7 +39,6 @@ extern DWORD g_gameOverTimer;
 extern DWORD g_loadingTimer;
 extern bool g_hasSeenAdvice;
 
-// Для FPS
 extern bool g_showFps;
 extern int g_fps;
 extern DWORD g_lastFpsTime;
@@ -51,3 +54,8 @@ void RenderLevel1(HDC hdc);
 
 void RenderGameOver(HDC hdc);
 void RenderComplete(HDC hdc);
+
+// Функции сохранения
+void LoadGame();
+void SaveGame();
+void ResetGame();
