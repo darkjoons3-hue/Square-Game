@@ -207,15 +207,12 @@ void RenderMenu(HDC hdc) {
         }
     }
     else if (g_state == STATE_PAUSED) {
-        // Затемняем экран
         SolidBrush darkOverlay(Color(200, 0, 0, 0));
         graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
 
-        // Заголовок PAUSED
         RECT titleRect = { 0, 50, 800, 150 };
         DrawTextCustom(hdc, L"PAUSED", titleRect, 48, Color(255, 255, 255, 255));
 
-        // Кнопки паузы
         const wchar_t* pauseBtns[] = { L"RESTART", L"ADVICE", L"ONITION", L"EXIT" };
         for (int i = 0; i < 4; i++) {
             RECT btnRect = { 300, 250 + (i * 50), 500, 290 + (i * 50) };
@@ -224,6 +221,42 @@ void RenderMenu(HDC hdc) {
             Color textColor = hover ? Color(255, 0, 180, 0) : Color(255, 255, 255, 255);
             DrawTextCustom(hdc, pauseBtns[i], btnRect, 24, textColor);
         }
+    }
+    else if (g_state == STATE_EXIT_CONFIRM) {
+        // Затемнение
+        SolidBrush darkOverlay(Color(200, 0, 0, 0));
+        graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
+
+        // Окно подтверждения
+        RECT modalRect = { 200, 150, 600, 450 };
+        SolidBrush modalBg(Color(255, 240, 240, 240)); // Светло-серый
+        graphics.FillRectangle(&modalBg, modalRect.left, modalRect.top, 400, 300);
+        
+        Pen borderPen(Color(255, 0, 0, 0), 3);
+        graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 400, 300);
+
+        // Текст
+        RECT textRect = { 200, 180, 600, 280 };
+        DrawTextCustom(hdc, L"\u0412\u044b \u0442\u043e\u0447\u043d\u043e \u0445\u043e\u0442\u0438\u0442\u0435 \u0432\u044b\u0439\u0442\u0438?", textRect, 24, Color(255, 0, 0, 0));
+        DrawTextCustom(hdc, L"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0443\u0440\u043e\u0432\u043d\u044f \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d.", RECT{200, 220, 600, 260}, 16, Color(255, 80, 80, 80));
+
+        // Кнопки ДА / НЕТ
+        RECT yesBtn = { 250, 350, 350, 400 };
+        RECT noBtn  = { 450, 350, 550, 400 };
+
+        bool hoverYes = (g_mousePos.x >= yesBtn.left && g_mousePos.x <= yesBtn.right && g_mousePos.y >= yesBtn.top && g_mousePos.y <= yesBtn.bottom);
+        bool hoverNo = (g_mousePos.x >= noBtn.left && g_mousePos.x <= noBtn.right && g_mousePos.y >= noBtn.top && g_mousePos.y <= noBtn.bottom);
+
+        SolidBrush btnBg(Color(255, 200, 200, 200));
+        graphics.FillRectangle(&btnBg, yesBtn.left, yesBtn.top, 100, 50);
+        graphics.FillRectangle(&btnBg, noBtn.left, noBtn.top, 100, 50);
+        
+        Pen btnBorder(Color(255, 0, 0, 0), 2);
+        graphics.DrawRectangle(&btnBorder, yesBtn.left, yesBtn.top, 100, 50);
+        graphics.DrawRectangle(&btnBorder, noBtn.left, noBtn.top, 100, 50);
+
+        DrawTextCustom(hdc, L"\u0414\u0410", yesBtn, 20, hoverYes ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0));
+        DrawTextCustom(hdc, L"\u041d\u0415\u0422", noBtn, 20, hoverNo ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0));
     }
 
     DrawCustomCursor(hdc);
