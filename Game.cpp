@@ -9,6 +9,8 @@ bool g_running = true;
 
 bool g_hasSeenDisclaimer = false;
 bool g_hasSeenStory = false;
+bool g_hasSeenAdvice = false;
+int g_advicePage = 0;
 
 int g_storyPage = 0;
 int g_charIndex = 0;
@@ -18,7 +20,6 @@ std::wstring g_currentText = L"";
 DWORD g_levelStartTime = 0;
 DWORD g_gameOverTimer = 0;
 DWORD g_loadingTimer = 0;
-bool g_hasSeenAdvice = false;
 
 bool g_showFps = false;
 int g_fps = 0;
