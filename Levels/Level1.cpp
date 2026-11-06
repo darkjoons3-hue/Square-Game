@@ -196,19 +196,15 @@ void UpdateLevel1() {
 
     // === УМНАЯ КАМЕРА С МЕРТВОЙ ЗОНОЙ ===
     if (!isFallingToDeath) {
-        // По X камера всегда следует плавно
         float targetCamX = player.x + player.size / 2 - 400; 
         cameraX += (targetCamX - cameraX) * 0.1f;
 
-        // По Y камера имеет мертвую зону (200px от верха, 450px от низа)
         float playerScreenY = player.y - cameraY;
         float targetCamY = cameraY; 
 
         if (playerScreenY < 200) {
-            // Игрок поднялся слишком высоко (выше 5 блоков от верха экрана)
             targetCamY = player.y - 200;
         } else if (playerScreenY + player.size > 450) {
-            // Игрок упал слишком низко (ниже пола)
             targetCamY = player.y + player.size - 450;
         }
         
@@ -265,10 +261,8 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // КЛЮЧ С АНИМАЦИЕЙ И ОБВОДКОЙ
     if (!keyItem.collected) {
         if (keyItem.x + 50 > cameraX && keyItem.x < cameraX + 800 && keyItem.y + 50 > cameraY && keyItem.y < cameraY + 600) {
-            // Плавное покачивание вверх-вниз (синусоида)
             float bobOffset = sinf(GetTickCount() / 200.0f) * 5.0f;
             float drawX = keyItem.x - cameraX;
             float drawY = keyItem.y - cameraY + bobOffset;
@@ -280,7 +274,6 @@ void RenderLevel1(HDC hdc) {
                 graphics.FillEllipse(&keyBrush, (INT)(drawX + 15), (INT)(drawY + 15), 20, 20);
                 graphics.FillRectangle(&keyBrush, (INT)(drawX + 25), (INT)(drawY + 22), 20, 6);
             }
-            // Белая обводка, чтобы ключ не сливался
             Pen whitePen(Color(255, 255, 255, 255), 2);
             graphics.DrawRectangle(&whitePen, (INT)drawX, (INT)drawY, 50, 50);
         }
@@ -342,4 +335,42 @@ void RenderLevel1(HDC hdc) {
     SelectObject(hdc, oldFont);
 }
 
-// ... (RenderGameOver и RenderComplete без изменений) ...
+void RenderGameOver(HDC hdc) {
+    if (GetTickCount() - g_gameOverTimer > 3000) {
+        InitLevel1();
+        g_state = STATE_PLAYING;
+        g_levelStartTime = GetTickCount(); 
+        return;
+    }
+
+    Graphics graphics(hdc);
+    SolidBrush bg(Color(255, 255, 255, 255)); 
+    graphics.FillRectangle(&bg, 0, 0, 800, 600);
+
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(0, 0, 0));
+    
+    HFONT fontBig = CreateFontW(64, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
+    HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
+
+    RECT textRect = { 0, 0, 800, 600 };
+    DrawTextW(hdc, L"GAME OVER!", -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    
+    SelectObject(hdc, oldFont);
+    DeleteObject(fontBig);
+}
+
+void RenderComplete(HDC hdc) {
+    Graphics graphics(hdc);
+    SolidBrush bg(Color(255, 255, 255, 255)); 
+    graphics.FillRectangle(&bg, 0, 0, 800, 600);
+
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(0, 0, 0));
+    HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
+
+    RECT textRect = { 0, 0, 800, 600 };
+    DrawTextW(hdc, L"COMPLETE!", -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    
+    SelectObject(hdc, oldFont);
+}
