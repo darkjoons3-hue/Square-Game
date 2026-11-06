@@ -10,6 +10,10 @@ POINT g_mousePos = { 400, 300 };
 POINT g_lastMousePos = { -1, -1 };
 float g_cursorAngle = 0.0f;
 
+// Глобальная коллекция для нашего шрифта
+PrivateFontCollection g_pfc;
+FontFamily* g_fontFamily = nullptr;
+
 void DrawCustomCursor(HDC hdc) {
     Graphics graphics(hdc);
     graphics.SetSmoothingMode(SmoothingModeAntiAlias);
@@ -24,7 +28,43 @@ void DrawCustomCursor(HDC hdc) {
     graphics.DrawPolygon(&outlinePen, points, 3);
 }
 
+// Универсальная функция отрисовки текста НАШИМ шрифтом
+void DrawTextCustom(HDC hdc, const wchar_t* text, RECT rc, int size, Color color, bool center = true) {
+    Graphics graphics(hdc);
+    // Этот параметр делает шрифт пиксельным и четким (без размытия)
+    graphics.SetTextRenderingHint(TextRenderingHintSingleBitPerPixelGridFit);
+    
+    Gdiplus::Font* font;
+    if (g_fontFamily && g_fontFamily->IsAvailable()) {
+        font = new Gdiplus::Font(g_fontFamily, (REAL)size, FontStyleRegular, UnitPixel);
+    } else {
+        font = new Gdiplus::Font(L"Arial", (REAL)size, FontStyleRegular, UnitPixel);
+    }
+    
+    SolidBrush brush(color);
+    StringFormat format;
+    
+    if (center) {
+        format.SetAlignment(StringAlignmentCenter);
+        format.SetLineAlignment(StringAlignmentCenter);
+    } else {
+        format.SetAlignment(StringAlignmentNear);
+        format.SetLineAlignment(StringAlignmentNear);
+    }
+    
+    graphics.DrawString(text, -1, font, RectF((float)rc.left, (float)rc.top, (float)(rc.right - rc.left), (float)(rc.bottom - rc.top)), &format, &brush);
+    delete font;
+}
+
 void InitMenu() {
+    // Загружаем шрифт напрямую из файла
+    if (g_pfc.GetFamilyCount() == 0) {
+        g_pfc.AddFontFile(L"assets\\Monodetermination.ttf");
+        if (g_pfc.GetFamilyCount() > 0) {
+            g_fontFamily = new FontFamily();
+            g_pfc.GetFamily(0, g_fontFamily);
+        }
+    }
     g_disclaimerAlpha = 0.0f;
     g_menuAlpha = 0.0f;
 }
@@ -47,9 +87,8 @@ void UpdateMenu() {
         if (g_menuAlpha < 1.0f) g_menuAlpha += 0.02f;
     }
     else if (g_state == STATE_STORY) {
-        // ЛОГИКА ПЕЧАТНОЙ МАШИНКИ
         if (g_charIndex < (int)g_currentText.length()) {
-            if (GetTickCount() - g_typeTimer > 50) { // Задержка между буквами (50 мс)
+            if (GetTickCount() - g_typeTimer > 50) { 
                 g_charIndex++;
                 g_typeTimer = GetTickCount();
             }
@@ -60,22 +99,10 @@ void UpdateMenu() {
 void RenderMenu(HDC hdc) {
     Graphics graphics(hdc);
 
-    // Четкий пиксельный шрифт
-    HFONT fontBig = CreateFontW(32, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-    HFONT fontNormal = CreateFontW(24, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-    HFONT fontSmall = CreateFontW(16, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-    HFONT fontTiny = CreateFontW(14, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-
     if (g_state == STATE_DISCLAIMER) {
         SolidBrush bg(Color(255, 15, 15, 15));
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
-        SetBkMode(hdc, TRANSPARENT);
-        int colorVal = (int)(200 * g_disclaimerAlpha);
-        SetTextColor(hdc, RGB(colorVal, colorVal, colorVal)); 
-
-        HFONT oldFont = (HFONT)SelectObject(hdc, fontNormal);
-        
         RECT textRect = { 50, 100, 750, 450 };
         const wchar_t* disclaimer = 
             L"\u0412\u041d\u0418\u041c\u0410\u041d\u0418\u0415\n\n"
@@ -89,19 +116,16 @@ void RenderMenu(HDC hdc) {
             L"\u041d\u0430\u0436\u0438\u043c\u0430\u044f \u00ab\u042f \u0421\u041e\u0413\u041b\u0410\u0421\u0415\u041d\u00bb, \u0432\u044b \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442\u0435,\n"
             L"\u0447\u0442\u043e \u0433\u043e\u0442\u043e\u0432\u044b \u043a \u043f\u043e\u043b\u043d\u043e\u043c\u0443 \u043f\u043e\u0433\u0440\u0443\u0436\u0435\u043d\u0438\u044e.";
 
-        DrawTextW(hdc, disclaimer, -1, &textRect, DT_CENTER | DT_TOP | DT_WORDBREAK);
+        int alpha = (int)(255 * g_disclaimerAlpha);
+        DrawTextCustom(hdc, disclaimer, textRect, 24, Color(alpha, 200, 200, 200));
 
         if (g_disclaimerAlpha > 0.5f) {
             RECT btnRect = { 300, 500, 500, 550 };
             bool hover = (g_mousePos.x >= btnRect.left && g_mousePos.x <= btnRect.right && g_mousePos.y >= btnRect.top && g_mousePos.y <= btnRect.bottom);
             SolidBrush btnBrush(hover ? Color(255, 50, 50, 50) : Color(255, 30, 30, 30));
             graphics.FillRectangle(&btnBrush, btnRect.left, btnRect.top, 200, 50);
-            
-            SetTextColor(hdc, RGB(255, 255, 255));
-            SelectObject(hdc, fontSmall);
-            DrawTextW(hdc, L"\u042f \u0421\u041e\u0413\u041b\u0410\u0421\u0415\u041d", -1, &btnRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            DrawTextCustom(hdc, L"\u042f \u0421\u041e\u0413\u041b\u0410\u0421\u0415\u041d", btnRect, 16, Color(255, 255, 255, 255));
         }
-        SelectObject(hdc, oldFont);
     } 
     else if (g_state == STATE_MENU || g_state == STATE_OPTIONS) {
         SolidBrush bg(Color(255, 255, 255, 255)); 
@@ -110,23 +134,17 @@ void RenderMenu(HDC hdc) {
         SolidBrush logoBrush(Color(255, 0, 0, 0));
         graphics.FillRectangle(&logoBrush, 360, 150, 80, 80);
 
-        SetBkMode(hdc, TRANSPARENT);
         const wchar_t* buttons[] = { L"PLAY", L"ONITION", L"EXIT" };
         for (int i = 0; i < 3; i++) {
             RECT btnRect = { 300, 350 + (i * 50), 500, 390 + (i * 50) };
             bool hover = (g_mousePos.x >= btnRect.left && g_mousePos.x <= btnRect.right && g_mousePos.y >= btnRect.top && g_mousePos.y <= btnRect.bottom);
             
-            if (hover && g_state == STATE_MENU) SetTextColor(hdc, RGB(0, 180, 0));
-            else SetTextColor(hdc, RGB(0, 0, 0));
-
-            SelectObject(hdc, fontBig);
-            DrawTextW(hdc, buttons[i], -1, &btnRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            Color textColor = (hover && g_state == STATE_MENU) ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0);
+            DrawTextCustom(hdc, buttons[i], btnRect, 32, textColor);
         }
 
-        SetTextColor(hdc, RGB(100, 100, 100));
-        SelectObject(hdc, fontTiny);
         RECT verRect = { 650, 560, 780, 590 };
-        DrawTextW(hdc, L"version 1.0", -1, &verRect, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+        DrawTextCustom(hdc, L"version 1.0", verRect, 14, Color(255, 100, 100, 100), false);
 
         if (g_state == STATE_OPTIONS) {
             SolidBrush darkOverlay(Color(150, 0, 0, 0));
@@ -139,14 +157,11 @@ void RenderMenu(HDC hdc) {
             Pen borderPen(Color(255, 0, 0, 0), 3);
             graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 400, 400);
 
-            SetTextColor(hdc, RGB(0, 0, 0));
-            SelectObject(hdc, fontBig);
             RECT titleRect = { 200, 120, 600, 170 };
-            DrawTextW(hdc, L"OPTIONS", -1, &titleRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            DrawTextCustom(hdc, L"OPTIONS", titleRect, 32, Color(255, 0, 0, 0));
 
-            SelectObject(hdc, fontNormal);
             RECT musicRect = { 250, 220, 400, 250 };
-            DrawTextW(hdc, L"Music", -1, &musicRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            DrawTextCustom(hdc, L"Music", musicRect, 20, Color(255, 0, 0, 0), false);
             
             RECT musicBar = { 400, 225, 550, 245 };
             SolidBrush barBg(Color(255, 150, 150, 150));
@@ -155,7 +170,7 @@ void RenderMenu(HDC hdc) {
             graphics.FillRectangle(&barFill, musicBar.left, musicBar.top, 80, 20);
 
             RECT soundRect = { 250, 300, 400, 330 };
-            DrawTextW(hdc, L"Sound", -1, &soundRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            DrawTextCustom(hdc, L"Sound", soundRect, 20, Color(255, 0, 0, 0), false);
             
             RECT soundBar = { 400, 305, 550, 325 };
             graphics.FillRectangle(&barBg, soundBar.left, soundBar.top, 150, 20);
@@ -169,40 +184,24 @@ void RenderMenu(HDC hdc) {
             Pen btnBorder(Color(255, 0, 0, 0), 2);
             graphics.DrawRectangle(&btnBorder, backBtn.left, backBtn.top, 80, 40);
 
-            SetTextColor(hdc, RGB(0, 0, 0));
-            SelectObject(hdc, fontSmall);
-            DrawTextW(hdc, L"BACK", -1, &backBtn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            DrawTextCustom(hdc, L"BACK", backBtn, 16, Color(255, 0, 0, 0));
         }
     }
     else if (g_state == STATE_STORY) {
-        // ЭКРАН ИСТОРИИ
-        SolidBrush bg(Color(255, 15, 15, 15)); // Черный фон
+        SolidBrush bg(Color(255, 15, 15, 15)); 
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(255, 255, 255)); // Белый текст
-
-        // Отрисовка частичного текста
         if (g_charIndex > 0 && g_charIndex <= (int)g_currentText.length()) {
             std::wstring visibleText = g_currentText.substr(0, g_charIndex);
             RECT textRect = { 100, 100, 700, 450 };
-            SelectObject(hdc, fontNormal);
-            DrawTextW(hdc, visibleText.c_str(), -1, &textRect, DT_CENTER | DT_TOP | DT_WORDBREAK);
+            DrawTextCustom(hdc, visibleText.c_str(), textRect, 24, Color(255, 255, 255, 255));
         }
 
-        // Подсказка внизу (появляется только когда текст допечатан)
         if (g_charIndex >= (int)g_currentText.length()) {
-            SetTextColor(hdc, RGB(100, 100, 100));
-            SelectObject(hdc, fontTiny);
             RECT hintRect = { 0, 500, 800, 550 };
-            DrawTextW(hdc, L"[ \u041d\u0430\u0436\u043c\u0438\u0442\u0435 Z \u0438\u043b\u0438 \u043a\u043b\u0438\u043a\u043d\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c ]", -1, &hintRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            DrawTextCustom(hdc, L"[ \u041d\u0430\u0436\u043c\u0438\u0442\u0435 Z \u0438\u043b\u0438 \u043a\u043b\u0438\u043a\u043d\u0438\u0442\u0435, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c ]", hintRect, 14, Color(255, 100, 100, 100));
         }
     }
-
-    DeleteObject(fontBig);
-    DeleteObject(fontNormal);
-    DeleteObject(fontSmall);
-    DeleteObject(fontTiny);
 
     DrawCustomCursor(hdc);
 }
