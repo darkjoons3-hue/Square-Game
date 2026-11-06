@@ -54,22 +54,32 @@ void InitLevel1() {
     // 3. Пол 1 (10 блоков)
     platforms.push_back({50, 650, 500, 750});
 
-    // 5. Пол 2 (4 блока)
+    // 4. Пол 2 (4 блока)
     platforms.push_back({650, 650, 200, 750});
 
-    // 7. Пол 3 (7 блоков) -> Остров
-    platforms.push_back({950, 650, 350, 750});
+    // 5. Пол 3 (7 блоков) -> ОСТРОВ (ПРОДЛЕН, ЧТОБЫ ЗАКРЫТЬ ЗАЗОР)
+    platforms.push_back({950, 650, 450, 750});
 
     // === ЛЕСЕНКА В СТИЛЕ GEOMETRY DASH ===
     
-    // 8. Первый бугор (добавляем 2 пикселя в высоту, чтобы не было щели)
+    // 8. Первый бугор (добавляем 2 пикселя в высоту)
     platforms.push_back({1100, 600, 50, 52}); 
 
-    // 9. Второй бугор (высота 2 блока, нахлест 2 пикселя)
+    // 9. Второй бугор (высота 2 блока)
     platforms.push_back({1200, 550, 50, 102}); 
 
-    // 10. Новый остров / Высокая стена (ширина 2 блока, высота 6 блоков + 2 пикселя нахлеста)
+    // 10. Высокая стена (ширина 2 блока, высота 6 блоков + 2 пикселя)
     platforms.push_back({1300, 500, 100, 302}); 
+
+    // 11. НОВАЯ ПЛАТФОРМА (5 блоков в длину, 2 в высоту), крепится ко 2-му блоку стены
+    platforms.push_back({1400, 550, 250, 100}); 
+
+    // === ШИПЫ ===
+    // 12. 4 шипа (длина 2 блока) на втором блоке платформы
+    spikes.push_back({1450, 525, 100, 25, false});
+
+    // 13. 1 шип в самом конце платформы (на 5-м блоке)
+    spikes.push_back({1600, 525, 50, 25, false});
 
     RespawnPlayer();
 }
@@ -131,6 +141,20 @@ void UpdateLevel1() {
         deathStartTime = GetTickCount();
     }
 
+    // === ЧЕСТНЫЙ ХИТБОКС ШИПОВ ===
+    for (const auto& s : spikes) {
+        float hitboxW = s.w - 10; 
+        float hitboxH = 10;       
+        float hitboxX = s.x + 5;
+        float hitboxY = s.pointingDown ? s.y : s.y + s.h - hitboxH;
+
+        if (player.x < hitboxX + hitboxW && player.x + player.size > hitboxX &&
+            player.y < hitboxY + hitboxH && player.y + player.size > hitboxY) {
+            RespawnPlayer(); 
+            break;
+        }
+    }
+
     if (!isFallingToDeath) {
         float targetCamX = player.x + player.size / 2 - 400; 
         float targetCamY = player.y + player.size / 2 - 475; 
@@ -161,6 +185,31 @@ void RenderLevel1(HDC hdc) {
             } else {
                 SolidBrush platBrush(Color(255, 0, 0, 0));
                 graphics.FillRectangle(&platBrush, (INT)(p.x - cameraX), (INT)(p.y - cameraY), (INT)p.w, (INT)p.h);
+            }
+        }
+    }
+
+    // ОТРИСОВКА ШИПОВ (По 2 маленьких шипа на 1 блок, чтобы влезло 4)
+    SolidBrush spikeBrush(Color(255, 200, 50, 50)); 
+    for (const auto& s : spikes) {
+        if (s.x + s.w > cameraX && s.x < cameraX + 800 && s.y + s.h > cameraY && s.y < cameraY + 600) {
+            int spikeCount = (int)(s.w / 25); // 4 шипа для 100px, 2 для 50px
+            
+            for (int i = 0; i < spikeCount; i++) {
+                PointF points[3];
+                float drawX = s.x - cameraX + (i * 25);
+                float drawY = s.y - cameraY;
+
+                if (s.pointingDown) { 
+                    points[0] = PointF(drawX, drawY);
+                    points[1] = PointF(drawX + 25, drawY);
+                    points[2] = PointF(drawX + 12.5f, drawY + 25);
+                } else { 
+                    points[0] = PointF(drawX, drawY + 25);
+                    points[1] = PointF(drawX + 25, drawY + 25);
+                    points[2] = PointF(drawX + 12.5f, drawY);
+                }
+                graphics.FillPolygon(&spikeBrush, points, 3);
             }
         }
     }
