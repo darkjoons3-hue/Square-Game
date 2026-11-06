@@ -136,11 +136,11 @@ void RenderMenu(HDC hdc) {
         graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
         SolidBrush logoBrush(Color(255, 0, 0, 0));
-        graphics.FillRectangle(&logoBrush, 360, 150, 80, 80);
+        graphics.FillRectangle(&logoBrush, 360, 130, 80, 80);
 
-        const wchar_t* buttons[] = { L"PLAY", L"ONITION", L"EXIT" };
+        const wchar_t* buttons[] = { L"PLAY", L"ONITION", L"QUIT GAME" }; // 3 кнопки
         for (int i = 0; i < 3; i++) {
-            RECT btnRect = { 300, 350 + (i * 50), 500, 390 + (i * 50) };
+            RECT btnRect = { 300, 300 + (i * 50), 500, 340 + (i * 50) };
             bool hover = (g_mousePos.x >= btnRect.left && g_mousePos.x <= btnRect.right && g_mousePos.y >= btnRect.top && g_mousePos.y <= btnRect.bottom);
             Color textColor = hover ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0);
             DrawTextCustom(hdc, buttons[i], btnRect, 32, textColor);
@@ -158,20 +158,20 @@ void RenderMenu(HDC hdc) {
         SolidBrush darkOverlay(Color(150, 0, 0, 0));
         graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
 
-        RECT modalRect = { 200, 100, 600, 500 };
+        // УВЕЛИЧЕННОЕ ОКНО (Высота 500)
+        RECT modalRect = { 200, 50, 600, 550 };
         SolidBrush modalBg(Color(255, 240, 240, 240));
-        graphics.FillRectangle(&modalBg, modalRect.left, modalRect.top, 400, 400);
+        graphics.FillRectangle(&modalBg, modalRect.left, modalRect.top, 400, 500);
         
         Pen borderPen(Color(255, 0, 0, 0), 3);
-        graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 400, 400);
+        graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 400, 500);
 
-        RECT titleRect = { 200, 120, 600, 170 };
+        RECT titleRect = { 200, 70, 600, 120 };
         DrawTextCustom(hdc, L"OPTIONS", titleRect, 32, Color(255, 0, 0, 0));
 
-        RECT musicRect = { 250, 220, 400, 250 };
+        RECT musicRect = { 250, 170, 400, 200 };
         DrawTextCustom(hdc, L"Music", musicRect, 20, Color(255, 0, 0, 0), false);
-        
-        RECT musicBar = { 400, 225, 550, 245 };
+        RECT musicBar = { 400, 175, 550, 195 };
         SolidBrush barBg(Color(255, 150, 150, 150));
         graphics.FillRectangle(&barBg, musicBar.left, musicBar.top, 150, 20);
         SolidBrush barFill(Color(255, 0, 180, 0));
@@ -179,44 +179,37 @@ void RenderMenu(HDC hdc) {
         Pen sliderPen(Color(255, 0, 0, 0), 2); 
         graphics.DrawRectangle(&sliderPen, musicBar.left, musicBar.top, 150, 20);
 
-        RECT soundRect = { 250, 300, 400, 330 };
+        RECT soundRect = { 250, 250, 400, 280 };
         DrawTextCustom(hdc, L"Sound", soundRect, 20, Color(255, 0, 0, 0), false);
-        
-        RECT soundBar = { 400, 305, 550, 325 };
+        RECT soundBar = { 400, 255, 550, 275 };
         graphics.FillRectangle(&barBg, soundBar.left, soundBar.top, 150, 20);
         graphics.FillRectangle(&barFill, soundBar.left, soundBar.top, 120, 20); 
         graphics.DrawRectangle(&sliderPen, soundBar.left, soundBar.top, 150, 20);
 
-        RECT fpsTextRect = { 250, 370, 400, 400 };
+        RECT fpsTextRect = { 250, 330, 400, 360 };
         DrawTextCustom(hdc, L"Show FPS", fpsTextRect, 20, Color(255, 0, 0, 0), false);
-        
-        RECT fpsBtn = { 400, 375, 480, 415 };
+        RECT fpsBtn = { 400, 340, 500, 380 }; // Расширена кнопка
         bool hoverFps = (g_mousePos.x >= fpsBtn.left && g_mousePos.x <= fpsBtn.right && g_mousePos.y >= fpsBtn.top && g_mousePos.y <= fpsBtn.bottom);
         SolidBrush fpsBtnBg(hoverFps ? Color(255, 200, 200, 200) : Color(255, 180, 180, 180));
-        graphics.FillRectangle(&fpsBtnBg, fpsBtn.left, fpsBtn.top, 80, 40);
-        Pen fpsBorder(Color(255, 0, 0, 0), 2);
-        graphics.DrawRectangle(&fpsBorder, fpsBtn.left, fpsBtn.top, 80, 40);
-
+        graphics.FillRectangle(&fpsBtnBg, fpsBtn.left, fpsBtn.top, 100, 40);
+        graphics.DrawRectangle(&sliderPen, fpsBtn.left, fpsBtn.top, 100, 40);
         DrawTextCustom(hdc, g_showFps ? L"ON" : L"OFF", fpsBtn, 16, g_showFps ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0));
 
-        RECT resetTextRect = { 250, 430, 400, 460 };
+        RECT resetTextRect = { 250, 400, 400, 430 };
         DrawTextCustom(hdc, L"Factory Reset", resetTextRect, 20, Color(255, 0, 0, 0), false);
-        
-        RECT resetBtn = { 400, 430, 480, 470 };
+        RECT resetBtn = { 400, 400, 500, 440 };
         bool hoverReset = (g_mousePos.x >= resetBtn.left && g_mousePos.x <= resetBtn.right && g_mousePos.y >= resetBtn.top && g_mousePos.y <= resetBtn.bottom);
         SolidBrush resetBtnBg(hoverReset ? Color(255, 255, 100, 100) : Color(255, 200, 150, 150)); 
-        graphics.FillRectangle(&resetBtnBg, resetBtn.left, resetBtn.top, 80, 40);
-        graphics.DrawRectangle(&fpsBorder, resetBtn.left, resetBtn.top, 80, 40);
-
+        graphics.FillRectangle(&resetBtnBg, resetBtn.left, resetBtn.top, 100, 40);
+        graphics.DrawRectangle(&sliderPen, resetBtn.left, resetBtn.top, 100, 40);
         DrawTextCustom(hdc, L"RESET", resetBtn, 16, Color(255, 0, 0, 0));
 
-        RECT backBtn = { 500, 375, 580, 415 };
+        // Кнопка BACK в самом низу
+        RECT backBtn = { 400, 480, 500, 520 };
         bool hoverBack = (g_mousePos.x >= backBtn.left && g_mousePos.x <= backBtn.right && g_mousePos.y >= backBtn.top && g_mousePos.y <= backBtn.bottom);
-        
         SolidBrush btnBrush(hoverBack ? Color(255, 200, 200, 200) : Color(255, 180, 180, 180));
-        graphics.FillRectangle(&btnBrush, backBtn.left, backBtn.top, 80, 40);
-        graphics.DrawRectangle(&borderPen, backBtn.left, backBtn.top, 80, 40);
-
+        graphics.FillRectangle(&btnBrush, backBtn.left, backBtn.top, 100, 40);
+        graphics.DrawRectangle(&sliderPen, backBtn.left, backBtn.top, 100, 40);
         DrawTextCustom(hdc, L"BACK", backBtn, 16, Color(255, 0, 0, 0));
     }
     else if (g_state == STATE_STORY) {
@@ -256,30 +249,43 @@ void RenderMenu(HDC hdc) {
         Pen borderPen(Color(255, 0, 0, 0), 3);
         graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 500, 400);
 
+        // Индикатор страниц
+        RECT pageRect = { 550, 110, 640, 140 };
+        DrawTextCustom(hdc, g_advicePage == 0 ? L"1 / 2" : L"2 / 2", pageRect, 18, Color(255, 80, 80, 80), false);
+
         RECT titleRect = { 150, 120, 650, 160 };
-        DrawTextCustom(hdc, L"\u0423\u041f\u0420\u0410\u0412\u041b\u0415\u041d\u0418\u0415", titleRect, 32, Color(255, 0, 0, 0));
+        DrawTextCustom(hdc, L"\u0421\u041e\u0412\u0415\u0422\u042b", titleRect, 32, Color(255, 0, 0, 0));
 
-        RECT text1Rect = { 150, 180, 650, 220 };
-        DrawTextCustom(hdc, L"\u0421\u0442\u0440\u0435\u043b\u043a\u0438 \u2190 \u2192 \u0438\u043b\u0438 A / D", text1Rect, 24, Color(255, 0, 0, 0));
-        RECT text2Rect = { 150, 210, 650, 240 };
-        DrawTextCustom(hdc, L"\u0414\u0432\u0438\u0436\u0435\u043d\u0438\u0435", text2Rect, 18, Color(255, 80, 80, 80));
+        if (g_advicePage == 0) {
+            // СТРАНИЦА 1: УПРАВЛЕНИЕ
+            RECT text1Rect = { 150, 180, 650, 220 };
+            DrawTextCustom(hdc, L"\u0421\u0442\u0440\u0435\u043b\u043a\u0438 \u2190 \u2192 \u0438\u043b\u0438 A / D", text1Rect, 24, Color(255, 0, 0, 0));
+            RECT text2Rect = { 150, 210, 650, 240 };
+            DrawTextCustom(hdc, L"\u0414\u0432\u0438\u0436\u0435\u043d\u0438\u0435", text2Rect, 18, Color(255, 80, 80, 80));
 
-        RECT text3Rect = { 150, 260, 650, 300 };
-        DrawTextCustom(hdc, L"\u041f\u0420\u041e\u0411\u0415\u041b \u0438\u043b\u0438 \u0421\u0442\u0440\u0435\u043b\u043a\u0430 \u2191", text3Rect, 24, Color(255, 0, 0, 0));
-        RECT text4Rect = { 150, 290, 650, 320 };
-        DrawTextCustom(hdc, L"\u041f\u0440\u044b\u0436\u043e\u043a", text4Rect, 18, Color(255, 80, 80, 80));
+            RECT text3Rect = { 150, 260, 650, 300 };
+            DrawTextCustom(hdc, L"\u041f\u0420\u041e\u0411\u0415\u041b \u0438\u043b\u0438 \u0421\u0442\u0440\u0435\u043b\u043a\u0430 \u2191", text3Rect, 24, Color(255, 0, 0, 0));
+            RECT text4Rect = { 150, 290, 650, 320 };
+            DrawTextCustom(hdc, L"\u041f\u0440\u044b\u0436\u043e\u043a", text4Rect, 18, Color(255, 80, 80, 80));
+        } else {
+            // СТРАНИЦА 2: КЛЮЧ И ЗАМОК
+            RECT text1Rect = { 150, 190, 650, 230 };
+            DrawTextCustom(hdc, L"\u041a\u041b\u042e\u0427 \u0418 \u0417\u0410\u041c\u041e\u041a", text1Rect, 24, Color(255, 0, 0, 0));
+            
+            RECT descRect = { 150, 240, 650, 340 };
+            DrawTextCustom(hdc, L"\u041d\u0430\u0439\u0434\u0438\u0442\u0435 \u043a\u043b\u044e\u0447, \u0447\u0442\u043e\u0431\u044b \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0437\u0430\u043c\u043e\u043a.\n\u0411\u0435\u0437 \u043a\u043b\u044e\u0447\u0430 \u0434\u0432\u0435\u0440\u044c \u043d\u0435 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f!", descRect, 18, Color(255, 80, 80, 80));
+        }
 
         RECT noteRect = { 150, 360, 650, 400 };
-        DrawTextCustom(hdc, L"\u0415\u0441\u043b\u0438 \u0432\u044b \u0437\u0430\u0431\u044b\u043b\u0438 \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435, \u0435\u0433\u043e \u0432\u0441\u0435\u0433\u0434\u0430\n\u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432 \u043c\u0435\u043d\u044e \u043f\u0430\u0443\u0437\u044b.", noteRect, 14, Color(255, 80, 80, 80));
+        DrawTextCustom(hdc, L"\u0412\u0441\u0435 \u0441\u043e\u0432\u0435\u0442\u044b \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432 \u043c\u0435\u043d\u044e \u043f\u0430\u0443\u0437\u044b.", noteRect, 14, Color(255, 100, 100, 100));
 
-        RECT btnOk = { 300, 450, 500, 500 };
-        bool hover = (g_mousePos.x >= btnOk.left && g_mousePos.x <= btnOk.right && g_mousePos.y >= btnOk.top && g_mousePos.y <= btnOk.bottom);
+        RECT btnAction = { 300, 450, 500, 500 };
+        bool hover = (g_mousePos.x >= btnAction.left && g_mousePos.x <= btnAction.right && g_mousePos.y >= btnAction.top && g_mousePos.y <= btnAction.bottom);
         SolidBrush btnBrush(hover ? Color(255, 200, 200, 200) : Color(255, 180, 180, 180));
-        graphics.FillRectangle(&btnBrush, btnOk.left, btnOk.top, 200, 50);
-        Pen btnBorder(Color(255, 0, 0, 0), 2);
-        graphics.DrawRectangle(&btnBorder, btnOk.left, btnOk.top, 200, 50);
+        graphics.FillRectangle(&btnBrush, btnAction.left, btnAction.top, 200, 50);
+        graphics.DrawRectangle(&borderPen, btnAction.left, btnAction.top, 200, 50);
 
-        DrawTextCustom(hdc, L"\u041f\u041e\u041d\u042f\u0422\u041d\u041e", btnOk, 20, hover ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0));
+        DrawTextCustom(hdc, g_advicePage == 0 ? L"NEXT" : L"\u041f\u041e\u041d\u042f\u0422\u041d\u041e", btnAction, 20, hover ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0));
     }
     else if (g_state == STATE_PAUSED) {
         SolidBrush darkOverlay(Color(200, 0, 0, 0));
@@ -288,7 +294,7 @@ void RenderMenu(HDC hdc) {
         RECT titleRect = { 0, 50, 800, 150 };
         DrawTextCustom(hdc, L"PAUSED", titleRect, 48, Color(255, 255, 255, 255));
 
-        const wchar_t* pauseBtns[] = { L"CONTINUE", L"RESTART", L"ADVICE", L"ONITION", L"EXIT" };
+        const wchar_t* pauseBtns[] = { L"CONTINUE", L"RESTART", L"ADVICE", L"ONITION", L"EXIT TO MENU" };
         for (int i = 0; i < 5; i++) {
             RECT btnRect = { 300, 230 + (i * 50), 500, 270 + (i * 50) };
             bool hover = (g_mousePos.x >= btnRect.left && g_mousePos.x <= btnRect.right && g_mousePos.y >= btnRect.top && g_mousePos.y <= btnRect.bottom);
@@ -297,7 +303,7 @@ void RenderMenu(HDC hdc) {
             DrawTextCustom(hdc, pauseBtns[i], btnRect, 24, textColor);
         }
     }
-    else if (g_state == STATE_EXIT_CONFIRM) {
+    else if (g_state == STATE_EXIT_TO_MENU_CONFIRM || g_state == STATE_QUIT_GAME_CONFIRM) {
         SolidBrush darkOverlay(Color(200, 0, 0, 0));
         graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
 
@@ -309,8 +315,12 @@ void RenderMenu(HDC hdc) {
         graphics.DrawRectangle(&borderPen, modalRect.left, modalRect.top, 400, 300);
 
         RECT textRect = { 200, 180, 600, 280 };
-        DrawTextCustom(hdc, L"\u0412\u044b \u0442\u043e\u0447\u043d\u043e \u0445\u043e\u0442\u0438\u0442\u0435 \u0432\u044b\u0439\u0442\u0438?", textRect, 24, Color(255, 0, 0, 0));
-        DrawTextCustom(hdc, L"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0443\u0440\u043e\u0432\u043d\u044f \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d.", RECT{200, 220, 600, 260}, 16, Color(255, 80, 80, 80));
+        if (g_state == STATE_QUIT_GAME_CONFIRM) {
+            DrawTextCustom(hdc, L"\u0412\u044b\u0439\u0442\u0438 \u0438\u0437 \u0438\u0433\u0440\u044b?", textRect, 24, Color(255, 0, 0, 0));
+        } else {
+            DrawTextCustom(hdc, L"\u0412\u044b\u0439\u0442\u0438 \u0432 \u043c\u0435\u043d\u044e?", textRect, 24, Color(255, 0, 0, 0));
+            DrawTextCustom(hdc, L"\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0443\u0440\u043e\u0432\u043d\u044f \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d.", RECT{200, 220, 600, 260}, 16, Color(255, 80, 80, 80));
+        }
 
         RECT yesBtn = { 250, 350, 350, 400 };
         RECT noBtn  = { 450, 350, 550, 400 };
