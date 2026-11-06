@@ -70,7 +70,7 @@ void OnMouseClick(int x, int y) {
         RECT btnFps = { 400, 375, 480, 415 };
 
         if (x >= btnBack.left && x <= btnBack.right && y >= btnBack.top && y <= btnBack.bottom) {
-            g_state = g_prevState; // Возврат туда, откуда пришли
+            g_state = g_prevState; 
         }
         else if (x >= btnFps.left && x <= btnFps.right && y >= btnFps.top && y <= btnFps.bottom) {
             g_showFps = !g_showFps;
@@ -83,7 +83,7 @@ void OnMouseClick(int x, int y) {
         RECT btnOk = { 300, 450, 500, 500 };
         if (x >= btnOk.left && x <= btnOk.right && y >= btnOk.top && y <= btnOk.bottom) {
             if (g_hasSeenAdvice) {
-                g_state = g_prevState; // Если открыли из паузы
+                g_state = g_prevState; 
             } else {
                 g_hasSeenAdvice = true;
                 g_state = STATE_PLAYING;
@@ -98,7 +98,6 @@ void OnMouseClick(int x, int y) {
         }
     }
     else if (g_state == STATE_PAUSED) {
-        // НОВЫЕ КООРДИНАТЫ ДЛЯ 5 КНОПОК
         RECT continueBtn = { 300, 230, 500, 270 };
         RECT restartBtn  = { 300, 280, 500, 320 };
         RECT adviceBtn   = { 300, 330, 500, 370 };
@@ -219,7 +218,6 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             DispatchMessageW(&msg);
         }
 
-        // Подсчет FPS
         g_frameCount++;
         if (GetTickCount() - g_lastFpsTime >= 1000) {
             g_fps = g_frameCount;
@@ -248,7 +246,6 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             }
         }
 
-        // Отрисовка
         if (g_state == STATE_PLAYING) {
             RenderLevel1(memDC);
         }
@@ -259,7 +256,6 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             RenderComplete(memDC);
         }
         else {
-            // Рисуем уровень на фоне, если мы в паузе, в настройках из паузы, в советах из паузы, ИЛИ в первых советах после загрузки
             if (g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM || 
                (g_state == STATE_OPTIONS && g_prevState == STATE_PAUSED) ||
                (g_state == STATE_ADVICE && g_prevState == STATE_PAUSED) ||
