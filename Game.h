@@ -10,7 +10,8 @@ enum GameState {
     STATE_OPTIONS,
     STATE_STORY,
     STATE_PLAYING,
-    STATE_PAUSED,      // НОВОЕ: Пауза
+    STATE_PAUSED,
+    STATE_EXIT_CONFIRM, // НОВОЕ: Окно "Вы точно хотите выйти?"
     STATE_GAME_OVER,
     STATE_COMPLETE
 };
@@ -20,13 +21,11 @@ extern HINSTANCE g_hInst;
 extern HWND g_hWnd;
 extern bool g_running;
 
-// Переменные для экрана истории
 extern int g_storyPage;
 extern int g_charIndex;      
 extern DWORD g_typeTimer;    
 extern std::wstring g_currentText; 
 
-// Переменные для таймера игры
 extern DWORD g_levelStartTime;
 extern DWORD g_gameOverTimer;
 
