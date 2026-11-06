@@ -66,16 +66,14 @@ void OnMouseClick(int x, int y) {
         }
     }
     else if (g_state == STATE_OPTIONS) {
-        // Кнопка BACK
-        RECT btnBack = { 500, 380, 580, 420 };
-        // Переключатель FPS
-        RECT btnFps = { 400, 380, 480, 420 };
+        RECT btnBack = { 500, 375, 580, 415 };
+        RECT btnFps = { 400, 375, 480, 415 };
 
         if (x >= btnBack.left && x <= btnBack.right && y >= btnBack.top && y <= btnBack.bottom) {
-            g_state = g_prevState; // Возвращаемся туда, откуда пришли
+            g_state = g_prevState; // Возврат туда, откуда пришли
         }
         else if (x >= btnFps.left && x <= btnFps.right && y >= btnFps.top && y <= btnFps.bottom) {
-            g_showFps = !g_showFps; // Включаем/выключаем FPS
+            g_showFps = !g_showFps;
         }
     }
     else if (g_state == STATE_STORY) {
@@ -85,7 +83,7 @@ void OnMouseClick(int x, int y) {
         RECT btnOk = { 300, 450, 500, 500 };
         if (x >= btnOk.left && x <= btnOk.right && y >= btnOk.top && y <= btnOk.bottom) {
             if (g_hasSeenAdvice) {
-                g_state = g_prevState; // Если открыли из паузы, возвращаемся в паузу
+                g_state = g_prevState; // Если открыли из паузы
             } else {
                 g_hasSeenAdvice = true;
                 g_state = STATE_PLAYING;
@@ -100,12 +98,17 @@ void OnMouseClick(int x, int y) {
         }
     }
     else if (g_state == STATE_PAUSED) {
-        RECT restartBtn = { 300, 250, 500, 290 };
-        RECT adviceBtn  = { 300, 300, 500, 340 };
-        RECT optionsBtn = { 300, 350, 500, 390 };
-        RECT exitBtn    = { 300, 400, 500, 440 };
+        // НОВЫЕ КООРДИНАТЫ ДЛЯ 5 КНОПОК
+        RECT continueBtn = { 300, 230, 500, 270 };
+        RECT restartBtn  = { 300, 280, 500, 320 };
+        RECT adviceBtn   = { 300, 330, 500, 370 };
+        RECT optionsBtn  = { 300, 380, 500, 420 };
+        RECT exitBtn     = { 300, 430, 500, 470 };
 
-        if (x >= restartBtn.left && x <= restartBtn.right && y >= restartBtn.top && y <= restartBtn.bottom) {
+        if (x >= continueBtn.left && x <= continueBtn.right && y >= continueBtn.top && y <= continueBtn.bottom) {
+            g_state = STATE_PLAYING;
+        }
+        else if (x >= restartBtn.left && x <= restartBtn.right && y >= restartBtn.top && y <= restartBtn.bottom) {
             InitLevel1();
             g_state = STATE_PLAYING;
             g_levelStartTime = GetTickCount();
@@ -224,7 +227,6 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             g_lastFpsTime = GetTickCount();
         }
 
-        // Обновление логики
         if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || 
             g_state == STATE_STORY || g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM || 
             g_state == STATE_ADVICE || g_state == STATE_LOADING) {
@@ -235,8 +237,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             UpdateLevel1();
         }
         
-        // Переход с загрузки
-        if (g_state == STATE_LOADING && GetTickCount() - g_loadingTimer > 1500) { // 1.5 сек загрузка
+        if (g_state == STATE_LOADING && GetTickCount() - g_loadingTimer > 1500) { 
             if (g_nextState == STATE_STORY) {
                 g_state = STATE_STORY;
                 g_typeTimer = GetTickCount();
@@ -258,10 +259,11 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             RenderComplete(memDC);
         }
         else {
-            // Рисуем уровень на фоне, если мы в меню паузы, настройках из паузы или советах из паузы
+            // Рисуем уровень на фоне, если мы в паузе, в настройках из паузы, в советах из паузы, ИЛИ в первых советах после загрузки
             if (g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM || 
                (g_state == STATE_OPTIONS && g_prevState == STATE_PAUSED) ||
-               (g_state == STATE_ADVICE && g_prevState == STATE_PAUSED)) {
+               (g_state == STATE_ADVICE && g_prevState == STATE_PAUSED) ||
+               (g_state == STATE_ADVICE && !g_hasSeenAdvice)) { 
                 RenderLevel1(memDC);
             }
             RenderMenu(memDC);
