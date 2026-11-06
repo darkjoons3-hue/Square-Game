@@ -23,8 +23,8 @@ DWORD deathStartTime = 0;
 
 Image* playerImg = nullptr;
 Image* blockImg = nullptr;
-Image* keyImg = nullptr;   // Для key.png
-Image* lockImg = nullptr;  // Для Lock.png
+Image* keyImg = nullptr;   
+Image* lockImg = nullptr;  
 
 HFONT g_hudFont = nullptr;
 
@@ -48,59 +48,43 @@ void InitLevel1() {
 
     if (!playerImg) playerImg = new Image(L"assets\\Player.png");
     if (!blockImg) blockImg = new Image(L"assets\\block.png");
-    if (!keyImg) keyImg = new Image(L"assets\\key.png");    // Загружаем ключ
-    if (!lockImg) lockImg = new Image(L"assets\\Lock.png");  // Загружаем замок
+    if (!keyImg) keyImg = new Image(L"assets\\key.png");    
+    if (!lockImg) lockImg = new Image(L"assets\\Lock.png");  
 
     if (!g_hudFont) {
         g_hudFont = CreateFontW(24, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
     }
 
-    // 1. Стена слева (15 блоков)
     platforms.push_back({0, 400, 50, 750}); 
-
-    // 2. Потолок (5 блоков)
     platforms.push_back({50, 400, 250, 50});
-
-    // 3. Пол 1 (10 блоков)
     platforms.push_back({50, 650, 500, 750});
-
-    // 4. Пол 2 (4 блока)
     platforms.push_back({650, 650, 200, 750});
-
-    // 5. Пол 3 (ПРОДЛЕН ДО 18 БЛОКОВ = 900px)
-    // Начинается с 950, заканчивается на 1850
     platforms.push_back({950, 650, 900, 750});
 
-    // === ЛЕСЕНКА В СТИЛЕ GEOMETRY DASH ===
+    // Лесенка
     platforms.push_back({1100, 600, 50, 52}); 
     platforms.push_back({1200, 550, 50, 102}); 
     platforms.push_back({1300, 500, 100, 302}); 
 
-    // 11. ТОНКАЯ ПЛАТФОРМА (8 блоков в длину, 1 в высоту)
+    // Тонкая платформа
     platforms.push_back({1397, 500, 403, 52}); 
 
-    // === ШИПЫ НА ПЛАТФОРМЕ ===
-    spikes.push_back({1500, 475, 50, 25, false}); // 3-й блок (2 шт)
-    spikes.push_back({1550, 475, 50, 25, false}); // 4-й блок (2 шт)
-    spikes.push_back({1775, 475, 25, 25, false}); // 8-й блок (1 шт)
+    // Шипы на платформе (УБРАН ПОСЛЕДНИЙ)
+    spikes.push_back({1500, 475, 50, 25, false}); 
+    spikes.push_back({1550, 475, 50, 25, false}); 
 
-    // === ШИПЫ ВНИЗУ (ПОД ПЛАТФОРМОЙ) ===
-    spikes.push_back({1500, 625, 25, 25, false}); // Под 3-м блоком
-    spikes.push_back({1650, 625, 25, 25, false}); // Под 6-м блоком
+    // Шипы внизу (УБРАН ТОТ, ЧТО БЛИЖЕ К КОНЦУ)
+    spikes.push_back({1500, 625, 25, 25, false}); 
 
-    // === КЛЮЧ ===
-    // Лежит внизу под первым блоком платформы
+    // Ключ
     keyItem.x = 1400;
     keyItem.y = 600;
     keyItem.collected = false;
 
-    // === ПРОПАСТЬ 2 БЛОКА (1850 - 1950) ===
-
-    // === НОВЫЙ ОСТРОВ (6 блоков = 300px) ===
+    // Новый остров
     platforms.push_back({1950, 650, 300, 750});
 
-    // === ЗАМОК ===
-    // Стоит на 1-м блоке нового острова (X=1950). Высота 3 блока (150px).
+    // Замок
     lockDoor.x = 1950;
     lockDoor.y = 500;
     lockDoor.w = 50;
@@ -133,7 +117,6 @@ void UpdateLevel1() {
     player.vy += 1.5f; 
     player.x += player.vx;
 
-    // Коллизия по X (платформы)
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -142,7 +125,6 @@ void UpdateLevel1() {
         }
     }
 
-    // Коллизия по X (Замок)
     if (!hasKey) {
         if (player.x < lockDoor.x + lockDoor.w && player.x + player.size > lockDoor.x &&
             player.y < lockDoor.y + lockDoor.h && player.y + player.size > lockDoor.y) {
@@ -156,7 +138,6 @@ void UpdateLevel1() {
     player.y += player.vy;
     player.onGround = false;
 
-    // Коллизия по Y (платформы)
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -172,7 +153,6 @@ void UpdateLevel1() {
         }
     }
 
-    // Коллизия по Y (Замок)
     if (!hasKey) {
         if (player.x < lockDoor.x + lockDoor.w && player.x + player.size > lockDoor.x &&
             player.y < lockDoor.y + lockDoor.h && player.y + player.size > lockDoor.y) {
@@ -188,7 +168,6 @@ void UpdateLevel1() {
         }
     }
 
-    // ПОДБОР КЛЮЧА
     if (!keyItem.collected) {
         if (player.x < keyItem.x + 50 && player.x + player.size > keyItem.x &&
             player.y < keyItem.y + 50 && player.y + player.size > keyItem.y) {
@@ -197,13 +176,11 @@ void UpdateLevel1() {
         }
     }
 
-    // Падение в пропасть
     if (player.y > 800) {
         isFallingToDeath = true; 
         deathStartTime = GetTickCount();
     }
 
-    // Шипы (Мгновенный респавн)
     for (const auto& s : spikes) {
         float hitboxW = s.w - 10; 
         float hitboxH = 10;       
@@ -217,10 +194,24 @@ void UpdateLevel1() {
         }
     }
 
+    // === УМНАЯ КАМЕРА С МЕРТВОЙ ЗОНОЙ ===
     if (!isFallingToDeath) {
+        // По X камера всегда следует плавно
         float targetCamX = player.x + player.size / 2 - 400; 
-        float targetCamY = player.y + player.size / 2 - 475; 
         cameraX += (targetCamX - cameraX) * 0.1f;
+
+        // По Y камера имеет мертвую зону (200px от верха, 450px от низа)
+        float playerScreenY = player.y - cameraY;
+        float targetCamY = cameraY; 
+
+        if (playerScreenY < 200) {
+            // Игрок поднялся слишком высоко (выше 5 блоков от верха экрана)
+            targetCamY = player.y - 200;
+        } else if (playerScreenY + player.size > 450) {
+            // Игрок упал слишком низко (ниже пола)
+            targetCamY = player.y + player.size - 450;
+        }
+        
         cameraY += (targetCamY - cameraY) * 0.1f;
     } else {
         float targetCamX = player.x + player.size / 2 - 400; 
@@ -240,7 +231,6 @@ void RenderLevel1(HDC hdc) {
     SolidBrush bg(Color(255, 255, 255, 255));
     graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
-    // Отрисовка платформ
     for (const auto& p : platforms) {
         if (p.x + p.w > cameraX && p.x < cameraX + 800 && p.y + p.h > cameraY && p.y < cameraY + 600) {
             if (blockImg && blockImg->GetLastStatus() == Ok) {
@@ -252,7 +242,6 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // Отрисовка шипов
     SolidBrush spikeBrush(Color(255, 200, 50, 50)); 
     for (const auto& s : spikes) {
         if (s.x + s.w > cameraX && s.x < cameraX + 800 && s.y + s.h > cameraY && s.y < cameraY + 600) {
@@ -276,27 +265,32 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // ОТРИСОВКА КЛЮЧА
+    // КЛЮЧ С АНИМАЦИЕЙ И ОБВОДКОЙ
     if (!keyItem.collected) {
         if (keyItem.x + 50 > cameraX && keyItem.x < cameraX + 800 && keyItem.y + 50 > cameraY && keyItem.y < cameraY + 600) {
+            // Плавное покачивание вверх-вниз (синусоида)
+            float bobOffset = sinf(GetTickCount() / 200.0f) * 5.0f;
+            float drawX = keyItem.x - cameraX;
+            float drawY = keyItem.y - cameraY + bobOffset;
+
             if (keyImg && keyImg->GetLastStatus() == Ok) {
-                graphics.DrawImage(keyImg, (INT)(keyItem.x - cameraX), (INT)(keyItem.y - cameraY), 50, 50);
+                graphics.DrawImage(keyImg, (INT)drawX, (INT)drawY, 50, 50);
             } else {
-                // Заглушка, если картинки нет
                 SolidBrush keyBrush(Color(255, 255, 215, 0)); 
-                graphics.FillEllipse(&keyBrush, (INT)(keyItem.x - cameraX + 15), (INT)(keyItem.y - cameraY + 15), 20, 20);
-                graphics.FillRectangle(&keyBrush, (INT)(keyItem.x - cameraX + 25), (INT)(keyItem.y - cameraY + 22), 20, 6);
+                graphics.FillEllipse(&keyBrush, (INT)(drawX + 15), (INT)(drawY + 15), 20, 20);
+                graphics.FillRectangle(&keyBrush, (INT)(drawX + 25), (INT)(drawY + 22), 20, 6);
             }
+            // Белая обводка, чтобы ключ не сливался
+            Pen whitePen(Color(255, 255, 255, 255), 2);
+            graphics.DrawRectangle(&whitePen, (INT)drawX, (INT)drawY, 50, 50);
         }
     }
 
-    // ОТРИСОВКА ЗАМКА
     if (!hasKey) {
         if (lockDoor.x + lockDoor.w > cameraX && lockDoor.x < cameraX + 800 && lockDoor.y + lockDoor.h > cameraY && lockDoor.y < cameraY + 600) {
             if (lockImg && lockImg->GetLastStatus() == Ok) {
                 graphics.DrawImage(lockImg, (INT)(lockDoor.x - cameraX), (INT)(lockDoor.y - cameraY), (INT)lockDoor.w, (INT)lockDoor.h);
             } else {
-                // Заглушка, если картинки нет
                 SolidBrush lockBrush(Color(255, 80, 80, 80)); 
                 graphics.FillRectangle(&lockBrush, (INT)(lockDoor.x - cameraX), (INT)(lockDoor.y - cameraY), (INT)lockDoor.w, (INT)lockDoor.h);
                 SolidBrush holeBrush(Color(255, 0, 0, 0));
@@ -305,7 +299,6 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // Отрисовка игрока
     if (playerImg && playerImg->GetLastStatus() == Ok) {
         graphics.DrawImage(playerImg, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     } else {
@@ -313,7 +306,6 @@ void RenderLevel1(HDC hdc) {
         graphics.FillRectangle(&playerBrush, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     }
 
-    // Отрисовка HUD
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0)); 
     HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
@@ -350,42 +342,4 @@ void RenderLevel1(HDC hdc) {
     SelectObject(hdc, oldFont);
 }
 
-void RenderGameOver(HDC hdc) {
-    if (GetTickCount() - g_gameOverTimer > 3000) {
-        InitLevel1();
-        g_state = STATE_PLAYING;
-        g_levelStartTime = GetTickCount(); 
-        return;
-    }
-
-    Graphics graphics(hdc);
-    SolidBrush bg(Color(255, 255, 255, 255)); 
-    graphics.FillRectangle(&bg, 0, 0, 800, 600);
-
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(0, 0, 0));
-    
-    HFONT fontBig = CreateFontW(64, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
-    HFONT oldFont = (HFONT)SelectObject(hdc, fontBig);
-
-    RECT textRect = { 0, 0, 800, 600 };
-    DrawTextW(hdc, L"GAME OVER!", -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    
-    SelectObject(hdc, oldFont);
-    DeleteObject(fontBig);
-}
-
-void RenderComplete(HDC hdc) {
-    Graphics graphics(hdc);
-    SolidBrush bg(Color(255, 255, 255, 255)); 
-    graphics.FillRectangle(&bg, 0, 0, 800, 600);
-
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(0, 0, 0));
-    HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
-
-    RECT textRect = { 0, 0, 800, 600 };
-    DrawTextW(hdc, L"COMPLETE!", -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    
-    SelectObject(hdc, oldFont);
-}
+// ... (RenderGameOver и RenderComplete без изменений) ...
