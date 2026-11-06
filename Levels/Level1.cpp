@@ -3,6 +3,7 @@
 
 using namespace Gdiplus;
 
+// 1 блок = 50 пикселей
 const float LEVEL_WIDTH = 2500.0f;
 const float LEVEL_HEIGHT = 1000.0f;
 float cameraX = 0;
@@ -12,11 +13,6 @@ std::vector<Platform> platforms;
 std::vector<Spike> spikes;
 Player player;
 
-KeyItem keyItem;
-LockDoor lockDoor;
-FinishFlag finishFlag;
-
-bool hasKey = false;
 bool isFallingToDeath = false;
 float deathTimer = 0;
 
@@ -24,7 +20,7 @@ Image* playerImg = nullptr;
 Image* blockImg = nullptr;
 
 void RespawnPlayer() {
-    player.x = 50;
+    player.x = 100;
     player.y = 600; 
     player.vx = 0;
     player.vy = 0;
@@ -32,8 +28,6 @@ void RespawnPlayer() {
     cameraY = 200; 
     isFallingToDeath = false;
     deathTimer = 0;
-    hasKey = false;
-    keyItem.collected = false;
 }
 
 void InitLevel1() {
@@ -43,38 +37,28 @@ void InitLevel1() {
     if (!playerImg) playerImg = new Image(L"assets\\Player.png");
     if (!blockImg) blockImg = new Image(L"assets\\block.png");
 
-    // --- КАРТА ПО СКЕТЧУ ---
+    // --- СТРОИМ БАЗУ ПО ТВОЕЙ МАТЕМАТИКЕ ---
 
-    // 1. Стартовая длинная земля (как на рисунке)
-    platforms.push_back({0, 650, 500, 50}); 
-    
-    // Маленький блок, который стоит рядом со стартом (на скетче он есть)
-    platforms.push_back({100, 600, 50, 50});
+    // 1. Стена слева (высота 5 блоков = 250px)
+    // y = 650 (пол) - 250 (высота) = 400
+    platforms.push_back({0, 400, 50, 250});
 
-    // 2. ОГРОМНАЯ ПРОПАСТЬ (от 500 до 1200 пикселей - это 14 блоков пустоты!)
+    // 2. Потолок / Крыша (5 блоков в высоту от пола, толщина 1 блок)
+    // Потолок начинается от стены и идет вправо
+    platforms.push_back({50, 400, 1300, 50});
 
-    // 3. Лестница (начинается далеко справа)
-    platforms.push_back({1200, 650, 50, 50});
-    platforms.push_back({1250, 600, 50, 50});
-    platforms.push_back({1300, 550, 50, 50});
-    platforms.push_back({1350, 500, 50, 50});
-    platforms.push_back({1400, 450, 50, 50});
-    platforms.push_back({1450, 400, 50, 50});
+    // 3. Пол 1 (10 блоков = 500px)
+    platforms.push_back({50, 650, 500, 50});
 
-    // Верхняя площадка лестницы (для теста)
-    platforms.push_back({1500, 400, 300, 50});
+    // 4. Пропасть 1 (2 блока = 100px). Просто пустота с 550 по 650.
 
-    // --- ОБЪЕКТЫ (Временные, чтобы не мешали) ---
-    keyItem.x = 1550;
-    keyItem.y = 350;
+    // 5. Пол 2 (4 блока = 200px)
+    platforms.push_back({650, 650, 200, 50});
 
-    lockDoor.x = 1700;
-    lockDoor.y = 250;
-    lockDoor.w = 50;
-    lockDoor.h = 150;
+    // 6. Пропасть 2 (2 блока = 100px). Пустота с 850 по 950.
 
-    finishFlag.x = 100;
-    finishFlag.y = 100;
+    // 7. Пол 3 (7 блоков = 350px)
+    platforms.push_back({950, 650, 350, 50});
 
     RespawnPlayer();
 }
@@ -88,14 +72,14 @@ void UpdateLevel1() {
         return; 
     }
 
-    // --- УВЕЛИЧЕННАЯ СКОРОСТЬ ---
-    float moveSpeed = 10.0f; // Было 6, стало 10 (куб будет бегать быстрее)
+    // Скорость (10)
+    float moveSpeed = 10.0f; 
 
     if (GetAsyncKeyState(VK_LEFT) & 0x8000 || GetAsyncKeyState('A') & 0x8000) player.vx = -moveSpeed;
     else if (GetAsyncKeyState(VK_RIGHT) & 0x8000 || GetAsyncKeyState('D') & 0x8000) player.vx = moveSpeed;
     else player.vx = 0;
 
-    // Прыжок (оставляем прежним для 1.5 блоков)
+    // Прыжок (1.5 блока)
     if ((GetAsyncKeyState(VK_SPACE) & 0x8000 || GetAsyncKeyState(VK_UP) & 0x8000 || GetAsyncKeyState('W') & 0x8000) && player.onGround) {
         player.vy = -15.0f; 
         player.onGround = false;
@@ -104,7 +88,7 @@ void UpdateLevel1() {
     player.vy += 1.5f; 
     player.x += player.vx;
 
-    // Коллизия по X (с платформами)
+    // Коллизия по X
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -113,22 +97,12 @@ void UpdateLevel1() {
         }
     }
 
-    // Коллизия по X (с Замком, если нет ключа)
-    if (!hasKey) {
-        if (player.x < lockDoor.x + lockDoor.w && player.x + player.size > lockDoor.x &&
-            player.y < lockDoor.y + lockDoor.h && player.y + player.size > lockDoor.y) {
-            if (player.vx > 0) player.x = lockDoor.x - player.size;
-            if (player.vx < 0) player.x = lockDoor.x + lockDoor.w;
-        }
-    }
-
     if (player.x < 0) player.x = 0;
-    if (player.x + player.size > LEVEL_WIDTH) player.x = LEVEL_WIDTH - player.size;
 
     player.y += player.vy;
     player.onGround = false;
 
-    // Коллизия по Y (с платформами)
+    // Коллизия по Y
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -142,37 +116,6 @@ void UpdateLevel1() {
                 player.vy = 0; 
             }
         }
-    }
-
-    // Коллизия по Y (с Замком)
-    if (!hasKey) {
-        if (player.x < lockDoor.x + lockDoor.w && player.x + player.size > lockDoor.x &&
-            player.y < lockDoor.y + lockDoor.h && player.y + player.size > lockDoor.y) {
-            if (player.vy > 0) { 
-                player.y = lockDoor.y - player.size; 
-                player.vy = 0; 
-                player.onGround = true; 
-            }
-            else if (player.vy < 0) { 
-                player.y = lockDoor.y + lockDoor.h; 
-                player.vy = 0; 
-            }
-        }
-    }
-
-    // Проверка подбора Ключа
-    if (!keyItem.collected) {
-        if (player.x < keyItem.x + 50 && player.x + player.size > keyItem.x &&
-            player.y < keyItem.y + 50 && player.y + player.size > keyItem.y) {
-            keyItem.collected = true;
-            hasKey = true;
-        }
-    }
-
-    // Проверка Финиша
-    if (player.x < finishFlag.x + 50 && player.x + player.size > finishFlag.x &&
-        player.y < finishFlag.y + 50 && player.y + player.size > finishFlag.y) {
-        g_state = STATE_COMPLETE;
     }
 
     // Падение в пропасть
@@ -200,11 +143,10 @@ void UpdateLevel1() {
 void RenderLevel1(HDC hdc) {
     Graphics graphics(hdc);
     
-    // Белый фон
     SolidBrush bg(Color(255, 255, 255, 255));
     graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
-    // 1. Платформы (block.png)
+    // Платформы (block.png)
     for (const auto& p : platforms) {
         if (p.x + p.w > cameraX && p.x < cameraX + 800 && p.y + p.h > cameraY && p.y < cameraY + 600) {
             if (blockImg && blockImg->GetLastStatus() == Ok) {
@@ -216,9 +158,6 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // (Шипы, Ключ и Замок временно закомментированы или сдвинуты, чтобы не мешать тесту прыжков)
-    // Когда скажешь, мы вернем их на место.
-
     // Игрок (player.png)
     if (playerImg && playerImg->GetLastStatus() == Ok) {
         graphics.DrawImage(playerImg, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
@@ -228,6 +167,6 @@ void RenderLevel1(HDC hdc) {
     }
 }
 
-// Заглушки для экранов, чтобы не было ошибок
+// Заглушки для экранов
 void RenderGameOver(HDC hdc) {}
 void RenderComplete(HDC hdc) {}
