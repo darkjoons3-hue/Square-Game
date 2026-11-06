@@ -4,10 +4,12 @@
 
 #include "Game.h"
 #include <cstdio>
+#include <shellapi.h> // <--- ВОТ ЭТА СТРОЧКА РЕШАЕТ ВСЁ
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
 #pragma comment(lib, "gdiplus.lib")
+#pragma comment(lib, "shell32.lib") // <--- И ЭТА
 #pragma comment(linker, "/SUBSYSTEM:WINDOWS")
 #pragma comment(linker, "/ENTRY:wWinMainCRTStartup")
 
@@ -121,7 +123,7 @@ void OnMouseClick(int x, int y) {
     else if (g_state == STATE_OPTIONS) {
         RECT btnBack = { 500, 375, 580, 415 };
         RECT btnFps = { 400, 375, 480, 415 };
-        RECT btnReset = { 400, 430, 480, 470 }; // НОВАЯ КНОПКА RESET
+        RECT btnReset = { 400, 430, 480, 470 };
 
         if (x >= btnBack.left && x <= btnBack.right && y >= btnBack.top && y <= btnBack.bottom) {
             g_state = g_prevState; 
