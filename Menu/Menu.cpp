@@ -181,7 +181,6 @@ void RenderMenu(HDC hdc) {
             graphics.FillRectangle(&barBg, soundBar.left, soundBar.top, 150, 20);
             graphics.FillRectangle(&barFill, soundBar.left, soundBar.top, 120, 20); 
 
-            // НОВЫЙ ПЕРЕКЛЮЧАТЕЛЬ FPS
             RECT fpsTextRect = { 250, 370, 400, 400 };
             DrawTextCustom(hdc, L"Show FPS", fpsTextRect, 20, Color(255, 0, 0, 0), false);
             
@@ -194,7 +193,6 @@ void RenderMenu(HDC hdc) {
 
             DrawTextCustom(hdc, g_showFps ? L"ON" : L"OFF", fpsBtn, 16, g_showFps ? Color(255, 0, 180, 0) : Color(255, 0, 0, 0));
 
-            // КНОПКА BACK
             RECT backBtn = { 500, 375, 580, 415 };
             bool hoverBack = (g_mousePos.x >= backBtn.left && g_mousePos.x <= backBtn.right && g_mousePos.y >= backBtn.top && g_mousePos.y <= backBtn.bottom);
             
@@ -233,7 +231,6 @@ void RenderMenu(HDC hdc) {
         DrawTextCustom(hdc, loadText.c_str(), loadRect, 36, Color(255, 255, 255, 255));
     }
     else if (g_state == STATE_ADVICE) {
-        // Окно советов
         SolidBrush darkOverlay(Color(200, 0, 0, 0));
         graphics.FillRectangle(&darkOverlay, 0, 0, 800, 600);
 
@@ -276,9 +273,10 @@ void RenderMenu(HDC hdc) {
         RECT titleRect = { 0, 50, 800, 150 };
         DrawTextCustom(hdc, L"PAUSED", titleRect, 48, Color(255, 255, 255, 255));
 
-        const wchar_t* pauseBtns[] = { L"RESTART", L"ADVICE", L"ONITION", L"EXIT" };
-        for (int i = 0; i < 4; i++) {
-            RECT btnRect = { 300, 250 + (i * 50), 500, 290 + (i * 50) };
+        // 5 КНОПОК В ПАУЗЕ
+        const wchar_t* pauseBtns[] = { L"CONTINUE", L"RESTART", L"ADVICE", L"ONITION", L"EXIT" };
+        for (int i = 0; i < 5; i++) {
+            RECT btnRect = { 300, 230 + (i * 50), 500, 270 + (i * 50) };
             bool hover = (g_mousePos.x >= btnRect.left && g_mousePos.x <= btnRect.right && g_mousePos.y >= btnRect.top && g_mousePos.y <= btnRect.bottom);
             
             Color textColor = hover ? Color(255, 0, 180, 0) : Color(255, 255, 255, 255);
