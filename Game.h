@@ -2,11 +2,13 @@
 #include <windows.h>
 #include <objidl.h>
 #include <gdiplus.h>
+#include <string>
 
 enum GameState {
     STATE_DISCLAIMER,
     STATE_MENU,
-    STATE_OPTIONS,     // Новое состояние для настроек
+    STATE_OPTIONS,
+    STATE_STORY,       // Экран с историей
     STATE_PLAYING,
     STATE_GAME_OVER,
     STATE_COMPLETE
@@ -16,6 +18,12 @@ extern GameState g_state;
 extern HINSTANCE g_hInst;
 extern HWND g_hWnd;
 extern bool g_running;
+
+// Переменные для экрана истории (Печатная машинка)
+extern int g_storyPage;
+extern int g_charIndex;      
+extern DWORD g_typeTimer;    
+extern std::wstring g_currentText; 
 
 void InitMenu();
 void UpdateMenu();
