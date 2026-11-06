@@ -13,12 +13,18 @@ std::vector<Platform> platforms;
 std::vector<Spike> spikes;
 Player player;
 
+KeyItem keyItem;
+LockDoor lockDoor;
+bool hasKey = false;
+
 bool isFallingToDeath = false;
 float deathTimer = 0;
 DWORD deathStartTime = 0; 
 
 Image* playerImg = nullptr;
 Image* blockImg = nullptr;
+Image* keyImg = nullptr;   // Для key.png
+Image* lockImg = nullptr;  // Для Lock.png
 
 HFONT g_hudFont = nullptr;
 
@@ -32,6 +38,8 @@ void RespawnPlayer() {
     isFallingToDeath = false;
     deathTimer = 0;
     g_gameOverTimer = 0;
+    hasKey = false;
+    keyItem.collected = false;
 }
 
 void InitLevel1() {
@@ -40,6 +48,8 @@ void InitLevel1() {
 
     if (!playerImg) playerImg = new Image(L"assets\\Player.png");
     if (!blockImg) blockImg = new Image(L"assets\\block.png");
+    if (!keyImg) keyImg = new Image(L"assets\\key.png");    // Загружаем ключ
+    if (!lockImg) lockImg = new Image(L"assets\\Lock.png");  // Загружаем замок
 
     if (!g_hudFont) {
         g_hudFont = CreateFontW(24, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Monodetermination");
@@ -57,33 +67,44 @@ void InitLevel1() {
     // 4. Пол 2 (4 блока)
     platforms.push_back({650, 650, 200, 750});
 
-    // 5. Пол 3 (7 блоков) -> ОСТРОВ (ПРОДЛЕН)
-    platforms.push_back({950, 650, 450, 750});
+    // 5. Пол 3 (ПРОДЛЕН ДО 18 БЛОКОВ = 900px)
+    // Начинается с 950, заканчивается на 1850
+    platforms.push_back({950, 650, 900, 750});
 
     // === ЛЕСЕНКА В СТИЛЕ GEOMETRY DASH ===
-    
-    // 8. Первый бугор
     platforms.push_back({1100, 600, 50, 52}); 
-
-    // 9. Второй бугор (высота 2 блока)
     platforms.push_back({1200, 550, 50, 102}); 
-
-    // 10. Высокая стена (ширина 2 блока, высота 6 блоков)
     platforms.push_back({1300, 500, 100, 302}); 
 
-    // 11. НОВАЯ ПЛАТФОРМА (8 блоков в длину, 1 в высоту)
-    // Сдвинута влево на 3px (1397) и ширина 403, чтобы не было зазора со стеной.
+    // 11. ТОНКАЯ ПЛАТФОРМА (8 блоков в длину, 1 в высоту)
     platforms.push_back({1397, 500, 403, 52}); 
 
-    // === ШИПЫ ===
-    // 12. Шипы на 3-м блоке (2 штуки)
-    spikes.push_back({1500, 475, 50, 25, false});
+    // === ШИПЫ НА ПЛАТФОРМЕ ===
+    spikes.push_back({1500, 475, 50, 25, false}); // 3-й блок (2 шт)
+    spikes.push_back({1550, 475, 50, 25, false}); // 4-й блок (2 шт)
+    spikes.push_back({1775, 475, 25, 25, false}); // 8-й блок (1 шт)
 
-    // 13. Шипы на 4-м блоке (2 штуки)
-    spikes.push_back({1550, 475, 50, 25, false});
+    // === ШИПЫ ВНИЗУ (ПОД ПЛАТФОРМОЙ) ===
+    spikes.push_back({1500, 625, 25, 25, false}); // Под 3-м блоком
+    spikes.push_back({1650, 625, 25, 25, false}); // Под 6-м блоком
 
-    // 14. ОДИН шип на 8-м блоке (в конце)
-    spikes.push_back({1750, 475, 25, 25, false});
+    // === КЛЮЧ ===
+    // Лежит внизу под первым блоком платформы
+    keyItem.x = 1400;
+    keyItem.y = 600;
+    keyItem.collected = false;
+
+    // === ПРОПАСТЬ 2 БЛОКА (1850 - 1950) ===
+
+    // === НОВЫЙ ОСТРОВ (6 блоков = 300px) ===
+    platforms.push_back({1950, 650, 300, 750});
+
+    // === ЗАМОК ===
+    // Стоит на 1-м блоке нового острова (X=1950). Высота 3 блока (150px).
+    lockDoor.x = 1950;
+    lockDoor.y = 500;
+    lockDoor.w = 50;
+    lockDoor.h = 150;
 
     RespawnPlayer();
 }
@@ -112,6 +133,7 @@ void UpdateLevel1() {
     player.vy += 1.5f; 
     player.x += player.vx;
 
+    // Коллизия по X (платформы)
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -120,11 +142,21 @@ void UpdateLevel1() {
         }
     }
 
+    // Коллизия по X (Замок)
+    if (!hasKey) {
+        if (player.x < lockDoor.x + lockDoor.w && player.x + player.size > lockDoor.x &&
+            player.y < lockDoor.y + lockDoor.h && player.y + player.size > lockDoor.y) {
+            if (player.vx > 0) player.x = lockDoor.x - player.size;
+            if (player.vx < 0) player.x = lockDoor.x + lockDoor.w;
+        }
+    }
+
     if (player.x < 0) player.x = 0;
 
     player.y += player.vy;
     player.onGround = false;
 
+    // Коллизия по Y (платформы)
     for (const auto& p : platforms) {
         if (player.x < p.x + p.w && player.x + player.size > p.x &&
             player.y < p.y + p.h && player.y + player.size > p.y) {
@@ -140,12 +172,38 @@ void UpdateLevel1() {
         }
     }
 
+    // Коллизия по Y (Замок)
+    if (!hasKey) {
+        if (player.x < lockDoor.x + lockDoor.w && player.x + player.size > lockDoor.x &&
+            player.y < lockDoor.y + lockDoor.h && player.y + player.size > lockDoor.y) {
+            if (player.vy > 0) { 
+                player.y = lockDoor.y - player.size; 
+                player.vy = 0; 
+                player.onGround = true; 
+            }
+            else if (player.vy < 0) { 
+                player.y = lockDoor.y + lockDoor.h; 
+                player.vy = 0; 
+            }
+        }
+    }
+
+    // ПОДБОР КЛЮЧА
+    if (!keyItem.collected) {
+        if (player.x < keyItem.x + 50 && player.x + player.size > keyItem.x &&
+            player.y < keyItem.y + 50 && player.y + player.size > keyItem.y) {
+            keyItem.collected = true;
+            hasKey = true;
+        }
+    }
+
+    // Падение в пропасть
     if (player.y > 800) {
         isFallingToDeath = true; 
         deathStartTime = GetTickCount();
     }
 
-    // === ЧЕСТНЫЙ ХИТБОКС ШИПОВ ===
+    // Шипы (Мгновенный респавн)
     for (const auto& s : spikes) {
         float hitboxW = s.w - 10; 
         float hitboxH = 10;       
@@ -182,6 +240,7 @@ void RenderLevel1(HDC hdc) {
     SolidBrush bg(Color(255, 255, 255, 255));
     graphics.FillRectangle(&bg, 0, 0, 800, 600);
 
+    // Отрисовка платформ
     for (const auto& p : platforms) {
         if (p.x + p.w > cameraX && p.x < cameraX + 800 && p.y + p.h > cameraY && p.y < cameraY + 600) {
             if (blockImg && blockImg->GetLastStatus() == Ok) {
@@ -193,12 +252,11 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // ОТРИСОВКА ШИПОВ
+    // Отрисовка шипов
     SolidBrush spikeBrush(Color(255, 200, 50, 50)); 
     for (const auto& s : spikes) {
         if (s.x + s.w > cameraX && s.x < cameraX + 800 && s.y + s.h > cameraY && s.y < cameraY + 600) {
             int spikeCount = (int)(s.w / 25); 
-            
             for (int i = 0; i < spikeCount; i++) {
                 PointF points[3];
                 float drawX = s.x - cameraX + (i * 25);
@@ -218,6 +276,36 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
+    // ОТРИСОВКА КЛЮЧА
+    if (!keyItem.collected) {
+        if (keyItem.x + 50 > cameraX && keyItem.x < cameraX + 800 && keyItem.y + 50 > cameraY && keyItem.y < cameraY + 600) {
+            if (keyImg && keyImg->GetLastStatus() == Ok) {
+                graphics.DrawImage(keyImg, (INT)(keyItem.x - cameraX), (INT)(keyItem.y - cameraY), 50, 50);
+            } else {
+                // Заглушка, если картинки нет
+                SolidBrush keyBrush(Color(255, 255, 215, 0)); 
+                graphics.FillEllipse(&keyBrush, (INT)(keyItem.x - cameraX + 15), (INT)(keyItem.y - cameraY + 15), 20, 20);
+                graphics.FillRectangle(&keyBrush, (INT)(keyItem.x - cameraX + 25), (INT)(keyItem.y - cameraY + 22), 20, 6);
+            }
+        }
+    }
+
+    // ОТРИСОВКА ЗАМКА
+    if (!hasKey) {
+        if (lockDoor.x + lockDoor.w > cameraX && lockDoor.x < cameraX + 800 && lockDoor.y + lockDoor.h > cameraY && lockDoor.y < cameraY + 600) {
+            if (lockImg && lockImg->GetLastStatus() == Ok) {
+                graphics.DrawImage(lockImg, (INT)(lockDoor.x - cameraX), (INT)(lockDoor.y - cameraY), (INT)lockDoor.w, (INT)lockDoor.h);
+            } else {
+                // Заглушка, если картинки нет
+                SolidBrush lockBrush(Color(255, 80, 80, 80)); 
+                graphics.FillRectangle(&lockBrush, (INT)(lockDoor.x - cameraX), (INT)(lockDoor.y - cameraY), (INT)lockDoor.w, (INT)lockDoor.h);
+                SolidBrush holeBrush(Color(255, 0, 0, 0));
+                graphics.FillEllipse(&holeBrush, (INT)(lockDoor.x - cameraX + 15), (INT)(lockDoor.y - cameraY + 50), 20, 20);
+            }
+        }
+    }
+
+    // Отрисовка игрока
     if (playerImg && playerImg->GetLastStatus() == Ok) {
         graphics.DrawImage(playerImg, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     } else {
@@ -225,6 +313,7 @@ void RenderLevel1(HDC hdc) {
         graphics.FillRectangle(&playerBrush, (INT)(player.x - cameraX), (INT)(player.y - cameraY), player.size, player.size);
     }
 
+    // Отрисовка HUD
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0)); 
     HFONT oldFont = (HFONT)SelectObject(hdc, g_hudFont);
