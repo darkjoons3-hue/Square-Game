@@ -13,7 +13,8 @@ enum GameState {
     STATE_ADVICE,      
     STATE_PLAYING,
     STATE_PAUSED,
-    STATE_EXIT_CONFIRM, 
+    STATE_EXIT_TO_MENU_CONFIRM, // Подтверждение выхода в меню
+    STATE_QUIT_GAME_CONFIRM,    // Подтверждение выхода из игры
     STATE_GAME_OVER,
     STATE_COMPLETE
 };
@@ -25,9 +26,10 @@ extern HINSTANCE g_hInst;
 extern HWND g_hWnd;
 extern bool g_running;
 
-// Для сохранений
 extern bool g_hasSeenDisclaimer;
 extern bool g_hasSeenStory;
+extern bool g_hasSeenAdvice;
+extern int g_advicePage; // 0 = Управление, 1 = Ключ и Замок
 
 extern int g_storyPage;
 extern int g_charIndex;      
@@ -37,7 +39,6 @@ extern std::wstring g_currentText;
 extern DWORD g_levelStartTime;
 extern DWORD g_gameOverTimer;
 extern DWORD g_loadingTimer;
-extern bool g_hasSeenAdvice;
 
 extern bool g_showFps;
 extern int g_fps;
@@ -55,7 +56,6 @@ void RenderLevel1(HDC hdc);
 void RenderGameOver(HDC hdc);
 void RenderComplete(HDC hdc);
 
-// Функции сохранения
 void LoadGame();
 void SaveGame();
 void ResetGame();
