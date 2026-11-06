@@ -12,6 +12,35 @@
 
 using namespace Gdiplus;
 
+// ТЕКСТ ИСТОРИИ (3 страницы)
+const wchar_t* storyPages[] = {
+    L"Это история про обыкновенного черного кубика...",
+    L"...который пытается найти смысл жизни...",
+    L"...в этом огромном, обыкновенном мире."
+};
+const int TOTAL_PAGES = 3;
+
+void AdvanceStory() {
+    if (g_state == STATE_STORY) {
+        // Если текст еще печатается - показываем его мгновенно
+        if (g_charIndex < (int)g_currentText.length()) {
+            g_charIndex = (int)g_currentText.length();
+        } 
+        // Если текст уже напечатан - переходим дальше
+        else {
+            g_storyPage++;
+            if (g_storyPage >= TOTAL_PAGES) {
+                g_state = STATE_PLAYING;
+                InitLevel1();
+            } else {
+                g_currentText = storyPages[g_storyPage];
+                g_charIndex = 0;
+                g_typeTimer = GetTickCount();
+            }
+        }
+    }
+}
+
 void OnMouseClick(int x, int y) {
     if (g_state == STATE_DISCLAIMER) {
         RECT btnRect = { 300, 500, 500, 550 };
@@ -24,8 +53,11 @@ void OnMouseClick(int x, int y) {
             RECT btnRect = { 300, 350 + (i * 50), 500, 390 + (i * 50) };
             if (x >= btnRect.left && x <= btnRect.right && y >= btnRect.top && y <= btnRect.bottom) {
                 if (i == 0) { 
-                    g_state = STATE_PLAYING;
-                    InitLevel1();
+                    g_state = STATE_STORY;
+                    g_storyPage = 0;
+                    g_currentText = storyPages[0];
+                    g_charIndex = 0;
+                    g_typeTimer = GetTickCount();
                 } else if (i == 1) {
                     g_state = STATE_OPTIONS;
                 } else if (i == 2) { 
@@ -35,11 +67,13 @@ void OnMouseClick(int x, int y) {
         }
     }
     else if (g_state == STATE_OPTIONS) {
-        // НОВЫЕ КООРДИНАТЫ ДЛЯ КНОПКИ BACK ВНУТРИ ОКНА
         RECT btnBack = { 500, 380, 580, 420 };
         if (x >= btnBack.left && x <= btnBack.right && y >= btnBack.top && y <= btnBack.bottom) {
             g_state = STATE_MENU;
         }
+    }
+    else if (g_state == STATE_STORY) {
+        AdvanceStory(); // Клик мышкой тоже листает историю
     }
     else if (g_state == STATE_GAME_OVER || g_state == STATE_COMPLETE) {
         g_state = STATE_MENU;
@@ -54,6 +88,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         OnMouseClick(pt.x, pt.y);
         return 0;
     }
+    case WM_KEYDOWN:
+        if (wParam == 'Z') { // Обработка клавиши Z
+            AdvanceStory();
+        }
+        return 0;
     case WM_SETCURSOR:
         SetCursor(nullptr);
         return TRUE;
@@ -108,10 +147,10 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             DispatchMessageW(&msg);
         }
 
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS) UpdateMenu();
+        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) UpdateMenu();
         else if (g_state == STATE_PLAYING) UpdateLevel1();
 
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS) RenderMenu(memDC);
+        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) RenderMenu(memDC);
         else if (g_state == STATE_PLAYING) RenderLevel1(memDC);
         else if (g_state == STATE_GAME_OVER) RenderGameOver(memDC);
         else if (g_state == STATE_COMPLETE) RenderComplete(memDC);
