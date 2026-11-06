@@ -150,7 +150,6 @@ void RenderMenu(HDC hdc) {
         DrawTextCustom(hdc, L"version 1.0", verRect, 14, Color(255, 100, 100, 100), false);
     }
     else if (g_state == STATE_OPTIONS) {
-        // Убираем белый фон, если пришли из паузы. Оставляем только затемнение.
         if (g_prevState == STATE_MENU) {
             SolidBrush bg(Color(255, 255, 255, 255)); 
             graphics.FillRectangle(&bg, 0, 0, 800, 600);
@@ -172,18 +171,23 @@ void RenderMenu(HDC hdc) {
         RECT musicRect = { 250, 220, 400, 250 };
         DrawTextCustom(hdc, L"Music", musicRect, 20, Color(255, 0, 0, 0), false);
         
+        // ПОЛЗУНОК MUSIC С ОБВОДКОЙ
         RECT musicBar = { 400, 225, 550, 245 };
         SolidBrush barBg(Color(255, 150, 150, 150));
         graphics.FillRectangle(&barBg, musicBar.left, musicBar.top, 150, 20);
         SolidBrush barFill(Color(255, 0, 180, 0));
         graphics.FillRectangle(&barFill, musicBar.left, musicBar.top, 80, 20);
+        Pen sliderPen(Color(255, 0, 0, 0), 2); // ЧЕРНАЯ ОБВОДКА
+        graphics.DrawRectangle(&sliderPen, musicBar.left, musicBar.top, 150, 20);
 
         RECT soundRect = { 250, 300, 400, 330 };
         DrawTextCustom(hdc, L"Sound", soundRect, 20, Color(255, 0, 0, 0), false);
         
+        // ПОЛЗУНОК SOUND С ОБВОДКОЙ
         RECT soundBar = { 400, 305, 550, 325 };
         graphics.FillRectangle(&barBg, soundBar.left, soundBar.top, 150, 20);
         graphics.FillRectangle(&barFill, soundBar.left, soundBar.top, 120, 20); 
+        graphics.DrawRectangle(&sliderPen, soundBar.left, soundBar.top, 150, 20);
 
         RECT fpsTextRect = { 250, 370, 400, 400 };
         DrawTextCustom(hdc, L"Show FPS", fpsTextRect, 20, Color(255, 0, 0, 0), false);
