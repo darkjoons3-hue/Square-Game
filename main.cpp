@@ -73,31 +73,41 @@ void OnMouseClick(int x, int y) {
         AdvanceStory();
     }
     else if (g_state == STATE_PLAYING) {
-        // Кнопка ПАУЗЫ (правый верхний угол)
         RECT pauseBtn = { 750, 10, 790, 50 };
         if (x >= pauseBtn.left && x <= pauseBtn.right && y >= pauseBtn.top && y <= pauseBtn.bottom) {
             g_state = STATE_PAUSED;
         }
     }
     else if (g_state == STATE_PAUSED) {
-        // Кнопки в меню паузы
         RECT restartBtn = { 300, 250, 500, 290 };
         RECT adviceBtn  = { 300, 300, 500, 340 };
         RECT optionsBtn = { 300, 350, 500, 390 };
         RECT exitBtn    = { 300, 400, 500, 440 };
 
         if (x >= restartBtn.left && x <= restartBtn.right && y >= restartBtn.top && y <= restartBtn.bottom) {
-            InitLevel1(); // Перезапуск
+            InitLevel1();
             g_state = STATE_PLAYING;
         }
         else if (x >= adviceBtn.left && x <= adviceBtn.right && y >= adviceBtn.top && y <= adviceBtn.bottom) {
             // Пока пусто
         }
         else if (x >= optionsBtn.left && x <= optionsBtn.right && y >= optionsBtn.top && y <= optionsBtn.bottom) {
-            g_state = STATE_OPTIONS; // Кидаем в настройки
+            g_state = STATE_OPTIONS;
         }
         else if (x >= exitBtn.left && x <= exitBtn.right && y >= exitBtn.top && y <= exitBtn.bottom) {
-            g_state = STATE_MENU; // Выход в главное меню
+            g_state = STATE_EXIT_CONFIRM; // Открываем окно подтверждения
+        }
+    }
+    else if (g_state == STATE_EXIT_CONFIRM) {
+        // Кнопки ДА и НЕТ в окне подтверждения
+        RECT yesBtn = { 250, 350, 350, 400 };
+        RECT noBtn  = { 450, 350, 550, 400 };
+
+        if (x >= yesBtn.left && x <= yesBtn.right && y >= yesBtn.top && y <= yesBtn.bottom) {
+            g_state = STATE_MENU; // Выходим в главное меню
+        }
+        else if (x >= noBtn.left && x <= noBtn.right && y >= noBtn.top && y <= noBtn.bottom) {
+            g_state = STATE_PAUSED; // Возвращаемся в паузу
         }
     }
     else if (g_state == STATE_GAME_OVER || g_state == STATE_COMPLETE) {
@@ -116,6 +126,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_KEYDOWN:
         if (wParam == 'Z') { 
             AdvanceStory();
+        }
+        // --- ДОБАВЛЕН ESC И ENTER ---
+        else if (wParam == VK_ESCAPE || wParam == VK_RETURN) { 
+            if (g_state == STATE_PLAYING) {
+                g_state = STATE_PAUSED;
+            } else if (g_state == STATE_PAUSED) {
+                g_state = STATE_PLAYING;
+            } else if (g_state == STATE_EXIT_CONFIRM) {
+                g_state = STATE_PAUSED; // Esc в окне выхода возвращает в паузу
+            }
         }
         return 0;
     case WM_SETCURSOR:
@@ -180,9 +200,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             UpdateLevel1();
             RenderLevel1(memDC);
         }
-        else if (g_state == STATE_PAUSED) {
-            RenderLevel1(memDC); // Рисуем застывший уровень на фоне
-            RenderMenu(memDC);   // Поверх рисуем меню паузы (сделаем это в Menu.cpp)
+        else if (g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM) {
+            RenderLevel1(memDC); // Рисуем застывший уровень
+            RenderMenu(memDC);   // Поверх него рисуем меню паузы или окно выхода
         }
         else if (g_state == STATE_GAME_OVER) {
             RenderLevel1(memDC); 
