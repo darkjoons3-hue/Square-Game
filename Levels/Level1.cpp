@@ -57,12 +57,12 @@ void InitLevel1() {
     // 4. Пол 2 (4 блока)
     platforms.push_back({650, 650, 200, 750});
 
-    // 5. Пол 3 (7 блоков) -> ОСТРОВ (ПРОДЛЕН, ЧТОБЫ ЗАКРЫТЬ ЗАЗОР)
+    // 5. Пол 3 (7 блоков) -> ОСТРОВ (ПРОДЛЕН)
     platforms.push_back({950, 650, 450, 750});
 
     // === ЛЕСЕНКА В СТИЛЕ GEOMETRY DASH ===
     
-    // 8. Первый бугор (добавляем 2 пикселя в высоту)
+    // 8. Первый бугор (добавляем 2 пикселя в высоту для нахлеста)
     platforms.push_back({1100, 600, 50, 52}); 
 
     // 9. Второй бугор (высота 2 блока)
@@ -71,15 +71,16 @@ void InitLevel1() {
     // 10. Высокая стена (ширина 2 блока, высота 6 блоков + 2 пикселя)
     platforms.push_back({1300, 500, 100, 302}); 
 
-    // 11. НОВАЯ ПЛАТФОРМА (5 блоков в длину, 2 в высоту), крепится ко 2-му блоку стены
-    platforms.push_back({1400, 550, 250, 100}); 
+    // 11. НОВАЯ ПЛАТФОРМА (8 блоков в длину, 2 в высоту), крепится к верхушке стены
+    // Начинается на X=1400, заканчивается на 1800. Y=500.
+    platforms.push_back({1400, 500, 400, 102}); 
 
     // === ШИПЫ ===
-    // 12. 4 шипа (длина 2 блока) на втором блоке платформы
-    spikes.push_back({1450, 525, 100, 25, false});
+    // 12. Шип на 7-м блоке (X=1700)
+    spikes.push_back({1700, 475, 50, 25, false});
 
-    // 13. 1 шип в самом конце платформы (на 5-м блоке)
-    spikes.push_back({1600, 525, 50, 25, false});
+    // 13. Шип на позиции 7.5, прямо у края (X=1775)
+    spikes.push_back({1775, 475, 50, 25, false});
 
     RespawnPlayer();
 }
@@ -136,12 +137,13 @@ void UpdateLevel1() {
         }
     }
 
+    // Падение в пропасть (вызывает Game Over)
     if (player.y > 800) {
         isFallingToDeath = true; 
         deathStartTime = GetTickCount();
     }
 
-    // === ЧЕСТНЫЙ ХИТБОКС ШИПОВ ===
+    // === ЧЕСТНЫЙ ХИТБОКС ШИПОВ (Телепорт без Game Over) ===
     for (const auto& s : spikes) {
         float hitboxW = s.w - 10; 
         float hitboxH = 10;       
@@ -150,7 +152,7 @@ void UpdateLevel1() {
 
         if (player.x < hitboxX + hitboxW && player.x + player.size > hitboxX &&
             player.y < hitboxY + hitboxH && player.y + player.size > hitboxY) {
-            RespawnPlayer(); 
+            RespawnPlayer(); // Мгновенный телепорт на старт
             break;
         }
     }
@@ -189,11 +191,11 @@ void RenderLevel1(HDC hdc) {
         }
     }
 
-    // ОТРИСОВКА ШИПОВ (По 2 маленьких шипа на 1 блок, чтобы влезло 4)
+    // ОТРИСОВКА ШИПОВ
     SolidBrush spikeBrush(Color(255, 200, 50, 50)); 
     for (const auto& s : spikes) {
         if (s.x + s.w > cameraX && s.x < cameraX + 800 && s.y + s.h > cameraY && s.y < cameraY + 600) {
-            int spikeCount = (int)(s.w / 25); // 4 шипа для 100px, 2 для 50px
+            int spikeCount = (int)(s.w / 25); 
             
             for (int i = 0; i < spikeCount; i++) {
                 PointF points[3];
