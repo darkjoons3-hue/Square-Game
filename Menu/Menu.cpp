@@ -61,11 +61,16 @@ void InitMenu() {
     if (g_pfc.GetFamilyCount() == 0) {
         g_pfc.AddFontFile(L"assets\\Monodetermination.ttf");
         
+        // --- ИСПРАВЛЕННЫЙ БЛОК ---
         INT numFound = 0;
-        g_pfc.GetFamilyCount(&numFound);
-        if (numFound > 0) {
-            FontFamily* families = new FontFamily[numFound];
-            g_pfc.GetFamilies(numFound, families, &numFound);
+        // GetFamilyCount() возвращает количество, не принимает аргументов
+        INT count = g_pfc.GetFamilyCount(); 
+        
+        if (count > 0) {
+            FontFamily* families = new FontFamily[count];
+            // GetFamilies принимает count, массив и указатель для numFound
+            g_pfc.GetFamilies(count, families, &numFound);
+            
             if (numFound > 0) {
                 WCHAR familyName[LF_FACESIZE];
                 families[0].GetFamilyName(familyName);
@@ -74,6 +79,7 @@ void InitMenu() {
             }
             delete[] families;
         }
+        // -------------------------
     }
     g_disclaimerAlpha = 0.0f;
     g_menuAlpha = 0.0f;
