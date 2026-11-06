@@ -26,9 +26,8 @@ void AdvanceStory() {
         } else {
             g_storyPage++;
             if (g_storyPage >= TOTAL_PAGES) {
-                g_state = STATE_PLAYING;
-                InitLevel1();
-                g_levelStartTime = GetTickCount();
+                g_state = STATE_LOADING; // Переход на экран загрузки
+                g_loadingTimer = GetTickCount();
             } else {
                 g_currentText = storyPages[g_storyPage];
                 g_charIndex = 0;
@@ -72,6 +71,18 @@ void OnMouseClick(int x, int y) {
     else if (g_state == STATE_STORY) {
         AdvanceStory();
     }
+    else if (g_state == STATE_ADVICE) {
+        RECT btnOk = { 300, 450, 500, 500 };
+        if (x >= btnOk.left && x <= btnOk.right && y >= btnOk.top && y <= btnOk.bottom) {
+            if (g_adviceFromPause) {
+                g_state = STATE_PAUSED;
+            } else {
+                g_state = STATE_PLAYING;
+                g_hasSeenAdvice = true; // Запоминаем, что прочитали
+                g_levelStartTime = GetTickCount(); // Запускаем таймер
+            }
+        }
+    }
     else if (g_state == STATE_PLAYING) {
         RECT pauseBtn = { 750, 10, 790, 50 };
         if (x >= pauseBtn.left && x <= pauseBtn.right && y >= pauseBtn.top && y <= pauseBtn.bottom) {
@@ -87,9 +98,11 @@ void OnMouseClick(int x, int y) {
         if (x >= restartBtn.left && x <= restartBtn.right && y >= restartBtn.top && y <= restartBtn.bottom) {
             InitLevel1();
             g_state = STATE_PLAYING;
+            g_levelStartTime = GetTickCount();
         }
         else if (x >= adviceBtn.left && x <= adviceBtn.right && y >= adviceBtn.top && y <= adviceBtn.bottom) {
-            // Пока пусто
+            g_state = STATE_ADVICE;
+            g_adviceFromPause = true; // Запоминаем, что открыли из паузы
         }
         else if (x >= optionsBtn.left && x <= optionsBtn.right && y >= optionsBtn.top && y <= optionsBtn.bottom) {
             g_state = STATE_OPTIONS;
@@ -190,17 +203,32 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             DispatchMessageW(&msg);
         }
 
-        // --- ИСПРАВЛЕНИЕ КУРСОРА В ПАУЗЕ ---
-        // Добавили STATE_PAUSED и STATE_EXIT_CONFIRM сюда, чтобы курсор обновлялся
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY || g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM) {
+        // Обновление курсора для всех меню и оверлеев
+        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || 
+            g_state == STATE_STORY || g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM || 
+            g_state == STATE_ADVICE || g_state == STATE_LOADING) {
             UpdateMenu();
         }
         
         if (g_state == STATE_PLAYING) {
             UpdateLevel1();
         }
+        
+        // Автоматический переход с экрана загрузки на игру
+        if (g_state == STATE_LOADING && GetTickCount() - g_loadingTimer > 2000) {
+            InitLevel1();
+            if (!g_hasSeenAdvice) {
+                g_state = STATE_ADVICE;
+                g_adviceFromPause = false;
+            } else {
+                g_state = STATE_PLAYING;
+                g_levelStartTime = GetTickCount();
+            }
+        }
 
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || g_state == STATE_STORY) {
+        // Отрисовка
+        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || 
+            g_state == STATE_STORY || g_state == STATE_LOADING || g_state == STATE_ADVICE) {
             RenderMenu(memDC);
         }
         else if (g_state == STATE_PLAYING) {
@@ -211,7 +239,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             RenderMenu(memDC);   
         }
         else if (g_state == STATE_GAME_OVER) {
-            RenderGameOver(memDC); // Уровень больше не рисуем, сразу Game Over
+            RenderGameOver(memDC); 
         }
         else if (g_state == STATE_COMPLETE) {
             RenderComplete(memDC);
