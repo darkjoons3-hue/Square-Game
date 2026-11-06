@@ -62,25 +62,28 @@ void InitLevel1() {
 
     // === ЛЕСЕНКА В СТИЛЕ GEOMETRY DASH ===
     
-    // 8. Первый бугор (добавляем 2 пикселя в высоту для нахлеста)
+    // 8. Первый бугор
     platforms.push_back({1100, 600, 50, 52}); 
 
     // 9. Второй бугор (высота 2 блока)
     platforms.push_back({1200, 550, 50, 102}); 
 
-    // 10. Высокая стена (ширина 2 блока, высота 6 блоков + 2 пикселя)
+    // 10. Высокая стена (ширина 2 блока, высота 6 блоков)
     platforms.push_back({1300, 500, 100, 302}); 
 
-    // 11. НОВАЯ ПЛАТФОРМА (8 блоков в длину, 2 в высоту), крепится к верхушке стены
-    // Начинается на X=1400, заканчивается на 1800. Y=500.
-    platforms.push_back({1400, 500, 400, 102}); 
+    // 11. НОВАЯ ПЛАТФОРМА (8 блоков в длину, 1 в высоту)
+    // Сдвинута влево на 3px (1397) и ширина 403, чтобы не было зазора со стеной.
+    platforms.push_back({1397, 500, 403, 52}); 
 
     // === ШИПЫ ===
-    // 12. Шип на 7-м блоке (X=1700)
-    spikes.push_back({1700, 475, 50, 25, false});
+    // 12. Шипы на 3-м блоке (2 штуки)
+    spikes.push_back({1500, 475, 50, 25, false});
 
-    // 13. Шип на позиции 7.5, прямо у края (X=1775)
-    spikes.push_back({1775, 475, 50, 25, false});
+    // 13. Шипы на 4-м блоке (2 штуки)
+    spikes.push_back({1550, 475, 50, 25, false});
+
+    // 14. ОДИН шип на 8-м блоке (в конце)
+    spikes.push_back({1750, 475, 25, 25, false});
 
     RespawnPlayer();
 }
@@ -137,13 +140,12 @@ void UpdateLevel1() {
         }
     }
 
-    // Падение в пропасть (вызывает Game Over)
     if (player.y > 800) {
         isFallingToDeath = true; 
         deathStartTime = GetTickCount();
     }
 
-    // === ЧЕСТНЫЙ ХИТБОКС ШИПОВ (Телепорт без Game Over) ===
+    // === ЧЕСТНЫЙ ХИТБОКС ШИПОВ ===
     for (const auto& s : spikes) {
         float hitboxW = s.w - 10; 
         float hitboxH = 10;       
@@ -152,7 +154,7 @@ void UpdateLevel1() {
 
         if (player.x < hitboxX + hitboxW && player.x + player.size > hitboxX &&
             player.y < hitboxY + hitboxH && player.y + player.size > hitboxY) {
-            RespawnPlayer(); // Мгновенный телепорт на старт
+            RespawnPlayer(); 
             break;
         }
     }
