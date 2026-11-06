@@ -26,7 +26,8 @@ void AdvanceStory() {
         } else {
             g_storyPage++;
             if (g_storyPage >= TOTAL_PAGES) {
-                g_state = STATE_LOADING; // Переход на экран загрузки
+                g_state = STATE_LOADING;
+                g_nextState = g_hasSeenAdvice ? STATE_PLAYING : STATE_ADVICE;
                 g_loadingTimer = GetTickCount();
             } else {
                 g_currentText = storyPages[g_storyPage];
@@ -49,12 +50,14 @@ void OnMouseClick(int x, int y) {
             RECT btnRect = { 300, 350 + (i * 50), 500, 390 + (i * 50) };
             if (x >= btnRect.left && x <= btnRect.right && y >= btnRect.top && y <= btnRect.bottom) {
                 if (i == 0) { 
-                    g_state = STATE_STORY;
+                    g_state = STATE_LOADING;
+                    g_nextState = STATE_STORY;
+                    g_loadingTimer = GetTickCount();
                     g_storyPage = 0;
                     g_currentText = storyPages[0];
                     g_charIndex = 0;
-                    g_typeTimer = GetTickCount();
                 } else if (i == 1) {
+                    g_prevState = STATE_MENU;
                     g_state = STATE_OPTIONS;
                 } else if (i == 2) { 
                     g_running = false;
@@ -63,9 +66,16 @@ void OnMouseClick(int x, int y) {
         }
     }
     else if (g_state == STATE_OPTIONS) {
+        // Кнопка BACK
         RECT btnBack = { 500, 380, 580, 420 };
+        // Переключатель FPS
+        RECT btnFps = { 400, 380, 480, 420 };
+
         if (x >= btnBack.left && x <= btnBack.right && y >= btnBack.top && y <= btnBack.bottom) {
-            g_state = STATE_MENU;
+            g_state = g_prevState; // Возвращаемся туда, откуда пришли
+        }
+        else if (x >= btnFps.left && x <= btnFps.right && y >= btnFps.top && y <= btnFps.bottom) {
+            g_showFps = !g_showFps; // Включаем/выключаем FPS
         }
     }
     else if (g_state == STATE_STORY) {
@@ -74,12 +84,12 @@ void OnMouseClick(int x, int y) {
     else if (g_state == STATE_ADVICE) {
         RECT btnOk = { 300, 450, 500, 500 };
         if (x >= btnOk.left && x <= btnOk.right && y >= btnOk.top && y <= btnOk.bottom) {
-            if (g_adviceFromPause) {
-                g_state = STATE_PAUSED;
+            if (g_hasSeenAdvice) {
+                g_state = g_prevState; // Если открыли из паузы, возвращаемся в паузу
             } else {
+                g_hasSeenAdvice = true;
                 g_state = STATE_PLAYING;
-                g_hasSeenAdvice = true; // Запоминаем, что прочитали
-                g_levelStartTime = GetTickCount(); // Запускаем таймер
+                g_levelStartTime = GetTickCount();
             }
         }
     }
@@ -101,10 +111,11 @@ void OnMouseClick(int x, int y) {
             g_levelStartTime = GetTickCount();
         }
         else if (x >= adviceBtn.left && x <= adviceBtn.right && y >= adviceBtn.top && y <= adviceBtn.bottom) {
+            g_prevState = STATE_PAUSED;
             g_state = STATE_ADVICE;
-            g_adviceFromPause = true; // Запоминаем, что открыли из паузы
         }
         else if (x >= optionsBtn.left && x <= optionsBtn.right && y >= optionsBtn.top && y <= optionsBtn.bottom) {
+            g_prevState = STATE_PAUSED;
             g_state = STATE_OPTIONS;
         }
         else if (x >= exitBtn.left && x <= exitBtn.right && y >= exitBtn.top && y <= exitBtn.bottom) {
@@ -196,6 +207,8 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
     HBITMAP oldBmp = (HBITMAP)SelectObject(memDC, memBmp);
 
     MSG msg;
+    g_lastFpsTime = GetTickCount();
+
     while (g_running) {
         while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
             if (msg.message == WM_QUIT) g_running = false;
@@ -203,7 +216,15 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             DispatchMessageW(&msg);
         }
 
-        // Обновление курсора для всех меню и оверлеев
+        // Подсчет FPS
+        g_frameCount++;
+        if (GetTickCount() - g_lastFpsTime >= 1000) {
+            g_fps = g_frameCount;
+            g_frameCount = 0;
+            g_lastFpsTime = GetTickCount();
+        }
+
+        // Обновление логики
         if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || 
             g_state == STATE_STORY || g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM || 
             g_state == STATE_ADVICE || g_state == STATE_LOADING) {
@@ -214,35 +235,36 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int) {
             UpdateLevel1();
         }
         
-        // Автоматический переход с экрана загрузки на игру
-        if (g_state == STATE_LOADING && GetTickCount() - g_loadingTimer > 2000) {
-            InitLevel1();
-            if (!g_hasSeenAdvice) {
-                g_state = STATE_ADVICE;
-                g_adviceFromPause = false;
+        // Переход с загрузки
+        if (g_state == STATE_LOADING && GetTickCount() - g_loadingTimer > 1500) { // 1.5 сек загрузка
+            if (g_nextState == STATE_STORY) {
+                g_state = STATE_STORY;
+                g_typeTimer = GetTickCount();
             } else {
-                g_state = STATE_PLAYING;
-                g_levelStartTime = GetTickCount();
+                InitLevel1();
+                g_state = g_nextState;
+                if (g_state == STATE_PLAYING) g_levelStartTime = GetTickCount();
             }
         }
 
         // Отрисовка
-        if (g_state == STATE_DISCLAIMER || g_state == STATE_MENU || g_state == STATE_OPTIONS || 
-            g_state == STATE_STORY || g_state == STATE_LOADING || g_state == STATE_ADVICE) {
-            RenderMenu(memDC);
-        }
-        else if (g_state == STATE_PLAYING) {
+        if (g_state == STATE_PLAYING) {
             RenderLevel1(memDC);
-        }
-        else if (g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM) {
-            RenderLevel1(memDC); 
-            RenderMenu(memDC);   
         }
         else if (g_state == STATE_GAME_OVER) {
             RenderGameOver(memDC); 
         }
         else if (g_state == STATE_COMPLETE) {
             RenderComplete(memDC);
+        }
+        else {
+            // Рисуем уровень на фоне, если мы в меню паузы, настройках из паузы или советах из паузы
+            if (g_state == STATE_PAUSED || g_state == STATE_EXIT_CONFIRM || 
+               (g_state == STATE_OPTIONS && g_prevState == STATE_PAUSED) ||
+               (g_state == STATE_ADVICE && g_prevState == STATE_PAUSED)) {
+                RenderLevel1(memDC);
+            }
+            RenderMenu(memDC);
         }
 
         BitBlt(hdc, 0, 0, 800, 600, memDC, 0, 0, SRCCOPY);
